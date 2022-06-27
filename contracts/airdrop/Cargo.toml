@@ -1,0 +1,24 @@
+[package]
+name = "mars-airdrop"
+version = "0.1.0"
+authors = ["larry <larry@delphidigital.io>"]
+edition = "2018"
+license = "UNLICENSED"
+repository = "https://github.com/mars-protocol/hub-periphery"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+backtraces = ["cosmwasm-std/backtraces"]
+
+[dependencies]
+bech32 = "0.9"
+cosmwasm-std = "1.0"
+cw2 = "0.13"
+cw-storage-plus = "0.13"
+hex = "0.4"
+ripemd = "0.1"
+schemars = "0.8.1"
+serde = { version = "1.0.103", default-features = false, features = ["derive"] }
+sha2 = "0.10"
