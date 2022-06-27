@@ -324,7 +324,7 @@ mod test {
 
         assert_eq!(err, StdError::generic_err("account has already claimed"));
 
-        // reset "claimed" to for the next test
+        // reset "claimed" for the next test
         CLAIMED.remove(deps.as_mut().storage, terra_acct);
 
         // invalid proof, valid signature
@@ -348,7 +348,7 @@ mod test {
 
         assert_eq!(err, StdError::generic_err("invalid proof"));
 
-        // reset "claimed" to for the next test
+        // reset "claimed" for the next test
         CLAIMED.remove(deps.as_mut().storage, terra_acct);
 
         // valid proof, but invalid signature
