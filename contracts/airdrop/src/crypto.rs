@@ -1,8 +1,8 @@
 use std::convert::TryInto;
 
 use bech32::{ToBase32, Variant};
-use hex;
 use cosmwasm_std::{Api, StdError, StdResult};
+use hex;
 use ripemd::Ripemd160;
 use sha2::{digest::Update, Digest, Sha256};
 

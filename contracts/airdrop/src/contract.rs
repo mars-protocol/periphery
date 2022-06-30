@@ -6,9 +6,9 @@ use cosmwasm_std::{
 };
 use cw2::set_contract_version;
 
-use crate::msg::{InstantiateMsg, ExecuteMsg, QueryMsg, ConfigResponse, leaf, msg};
 use crate::crypto::{pubkey_to_addr, verify_proof, verify_signature};
-use crate::state::{CLAIMED, CONFIG, Config};
+use crate::msg::{leaf, msg, ConfigResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
+use crate::state::{Config, CLAIMED, CONFIG};
 
 const CONTRACT_NAME: &str = "crates.io:mars-airdrop";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -233,9 +233,10 @@ pub fn query_verify_proof(
 mod test {
     use super::*;
     use cosmwasm_std::testing::{
-        mock_dependencies, mock_env, mock_info, MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR
+        mock_dependencies, mock_env, mock_info, MockApi, MockQuerier, MockStorage,
+        MOCK_CONTRACT_ADDR,
     };
-    use cosmwasm_std::{Empty, SubMsg, Timestamp, OwnedDeps};
+    use cosmwasm_std::{Empty, OwnedDeps, SubMsg, Timestamp};
 
     fn mock_env_at_timestamp(seconds: u64) -> Env {
         let mut env = mock_env();
