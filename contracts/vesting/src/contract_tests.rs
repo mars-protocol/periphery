@@ -519,4 +519,14 @@ fn querying_positions() {
         QueryMsg::TotalVotingPower {},
     );
     assert_eq!(tvp, Uint128::new(35294));
+
+    // query the voting power of a user who doesn't have a vesting position; should return zero
+    let vp: Uint128 = query_helper(
+        deps.as_ref(),
+        mock_env_at_timestamp(1696161600),
+        QueryMsg::VotingPower {
+            user: "pumpkin".to_string(),
+        },
+    );
+    assert_eq!(vp, Uint128::zero());
 }
