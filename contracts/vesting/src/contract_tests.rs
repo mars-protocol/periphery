@@ -520,4 +520,3 @@ fn querying_positions() {
     );
     assert_eq!(tvp, Uint128::new(35294));
 }
-
