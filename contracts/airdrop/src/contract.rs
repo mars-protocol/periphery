@@ -2,16 +2,20 @@
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     coins, to_binary, Addr, BankMsg, Binary, CosmosMsg, Deps, DepsMut, Env, Event, MessageInfo,
-    Response, StdError, StdResult, Uint128,
+    Order, Response, StdError, StdResult, Uint128,
 };
 use cw2::set_contract_version;
+use cw_storage_plus::Bound;
 
 use crate::crypto::{pubkey_to_addr, verify_proof, verify_signature};
-use crate::msg::{leaf, msg, ConfigResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
+use crate::msg::{leaf, msg, ClaimedResponse, ConfigResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::state::{Config, CLAIMED, CONFIG};
 
 const CONTRACT_NAME: &str = "crates.io:mars-airdrop";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
+
+const MAX_LIMIT: u32 = 30;
+const DEFAULT_LIMIT: u32 = 10;
 
 //--------------------------------------------------------------------------------------------------
 // Instantiation
@@ -86,10 +90,10 @@ pub fn claim(
         deps.storage,
         &terra_acct,
         |claimed| {
-            if claimed == Some(true) {
+            if claimed.is_some() {
                 return Err(StdError::generic_err("account has already claimed"));
             }
-            Ok(true)
+            Ok(amount)
         },
     )?;
 
@@ -166,6 +170,10 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::Claimed {
             terra_acct,
         } => to_binary(&query_claimed(deps, terra_acct)?),
+        QueryMsg::AllClaimed {
+            start_after,
+            limit,
+        } => to_binary(&query_all_claimed(deps, start_after, limit)?),
         QueryMsg::VerifySignature {
             terra_acct_pk,
             mars_acct,
@@ -189,8 +197,29 @@ pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
     })
 }
 
-pub fn query_claimed(deps: Deps, terra_acct: String) -> StdResult<bool> {
-    Ok(CLAIMED.load(deps.storage, &terra_acct).unwrap_or(false))
+pub fn query_claimed(deps: Deps, terra_acct: String) -> StdResult<ClaimedResponse> {
+    Ok(ClaimedResponse {
+        amount: CLAIMED.load(deps.storage, &terra_acct).unwrap_or_else(|_| Uint128::zero()),
+        terra_acct,
+    })
+}
+
+pub fn query_all_claimed(
+    deps: Deps,
+    start_after: Option<String>,
+    limit: Option<u32>,
+) -> StdResult<Vec<ClaimedResponse>>{
+    let start = start_after.as_ref().map(|terra_acct| Bound::exclusive(terra_acct.as_str()));
+    let limit = limit.unwrap_or(DEFAULT_LIMIT).min(MAX_LIMIT) as usize;
+
+    CLAIMED
+        .range(deps.storage, start, None, Order::Ascending)
+        .take(limit)
+        .map(|res| {
+            let (terra_acct, amount) = res?;
+            Ok(ClaimedResponse { terra_acct, amount })
+        })
+        .collect()
 }
 
 pub fn query_verify_signature(
@@ -236,12 +265,16 @@ mod test {
         mock_dependencies, mock_env, mock_info, MockApi, MockQuerier, MockStorage,
         MOCK_CONTRACT_ADDR,
     };
-    use cosmwasm_std::{Empty, OwnedDeps, SubMsg, Timestamp};
+    use cosmwasm_std::{from_binary, Empty, OwnedDeps, SubMsg, Timestamp};
 
     fn mock_env_at_timestamp(seconds: u64) -> Env {
         let mut env = mock_env();
         env.block.time = Timestamp::from_seconds(seconds);
         env
+    }
+
+    fn query_helper<T: serde::de::DeserializeOwned>(deps: Deps, env: Env, msg: QueryMsg) -> T {
+        from_binary(&query(deps, env, msg).unwrap()).unwrap()
     }
 
     fn setup_test() -> OwnedDeps<MockStorage, MockApi, MockQuerier, Empty> {
@@ -304,9 +337,9 @@ mod test {
             })),
         );
 
-        // "claimed" should have been set to true
+        // "claimed" should have been updated
         let claimed = CLAIMED.load(deps.as_ref().storage, terra_acct).unwrap();
-        assert_eq!(claimed, true);
+        assert_eq!(claimed, Uint128::new(42069));
 
         // the same account cannot claim twice
         let err = execute(
@@ -368,6 +401,36 @@ mod test {
         .unwrap_err();
 
         assert_eq!(err, StdError::generic_err("invalid signature"));
+    }
+
+    #[test]
+    fn querying_all_claimed() {
+        let mut deps = setup_test();
+
+        CLAIMED.save(deps.as_mut().storage, "larry", &Uint128::new(42069)).unwrap();
+        CLAIMED.save(deps.as_mut().storage, "jake", &Uint128::new(69420)).unwrap();
+
+        let res: Vec<ClaimedResponse> = query_helper(
+            deps.as_ref(),
+            mock_env(),
+            QueryMsg::AllClaimed {
+                start_after: None,
+                limit: None,
+            },
+        );
+        assert_eq!(
+            res,
+            vec![
+                ClaimedResponse {
+                    terra_acct: "jake".to_string(),
+                    amount: Uint128::new(69420),
+                },
+                ClaimedResponse {
+                    terra_acct: "larry".to_string(),
+                    amount: Uint128::new(42069),
+                }
+            ],
+        );
     }
 
     #[test]

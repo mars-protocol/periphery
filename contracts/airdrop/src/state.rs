@@ -1,4 +1,4 @@
-use cosmwasm_std::Addr;
+use cosmwasm_std::{Addr, Uint128};
 use cw_storage_plus::{Item, Map};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -13,6 +13,11 @@ pub struct Config {
     pub community_pool: Addr,
 }
 
+/// The contract's configurations
 pub const CONFIG: Item<Config> = Item::new("config");
 
-pub const CLAIMED: Map<&str, bool> = Map::new("claimed");
+/// The amount of tokens each user has claimed
+///
+/// NOTE: The key is `&str` instead of `Addr` because i am unsure whether `deps.api` can validate terra
+/// addresses when the chain's account prefix is `mars`. Maybe it can, idk
+pub const CLAIMED: Map<&str, Uint128> = Map::new("claimed");

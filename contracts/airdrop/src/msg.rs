@@ -41,18 +41,23 @@ pub enum ExecuteMsg {
 pub enum QueryMsg {
     /// The contract's config; returns `ConfigResponse`
     Config {},
-    /// Whether an account has already claimed
+    /// The amount of tokens that an account has claimed; returns `ClaimedResponse`
     Claimed {
         terra_acct: String,
     },
-    /// Verify the validity of a signature
+    /// Enumerate all accounts that have claimed; returns `Vec<ClaimedResponse>`
+    AllClaimed {
+        start_after: Option<String>,
+        limit: Option<u32>,
+    },
+    /// Verify the validity of a signature; returns `bool`
     VerifySignature {
         terra_acct_pk: String,
         mars_acct: String,
         amount: Uint128,
         signature: String,
     },
-    /// Verify a Merkle proof
+    /// Verify a Merkle proof; returns `bool`
     VerifyProof {
         terra_acct: String,
         amount: Uint128,
@@ -68,6 +73,14 @@ pub struct ConfigResponse {
     pub claim_deadline: u64,
     /// Address of the community pool module account
     pub community_pool: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct ClaimedResponse {
+    /// The user's Terra account address
+    pub terra_acct: String,
+    /// The amount of tokens this user has claimed
+    pub amount: Uint128,
 }
 
 /// Generate the message that needs to be signed by the Terra account's private key
