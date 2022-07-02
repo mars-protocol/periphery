@@ -60,13 +60,15 @@ pub enum QueryMsg {
     },
     /// Details of a recipient's vesting position; returns `PositionResponse`
     ///
-    /// NOTE: This query depends on block time, therefore it may not work with time travel queries
+    /// NOTE: This query depends on block time, therefore it may not work with time travel queries.
+    /// In such cases, use WASM raw query instead.
     Position {
         user: String,
     },
     /// Enumerate all vesting positions; returns `Vec<PositionResponse>`
     ///
-    /// NOTE: This query depends on block time, therefore it may not work with time travel queries
+    /// NOTE: This query depends on block time, therefore it may not work with time travel queries.
+    /// In such cases, use WASM raw query instead.
     Positions {
         start_after: Option<String>,
         limit: Option<u32>,
