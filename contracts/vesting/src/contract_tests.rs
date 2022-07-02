@@ -8,7 +8,7 @@ use cosmwasm_std::{
 
 use crate::contract::{execute, instantiate, query};
 use crate::msg::{
-    ConfigResponse, ExecuteMsg, InstantiateMsg, PositionResponse, QueryMsg, Schedule,
+    ConfigResponse, ExecuteMsg, InstantiateMsg, PositionResponse, QueryMsg, Schedule, VotingPowerResponse,
 };
 use crate::state::{Position, POSITIONS};
 
@@ -495,23 +495,23 @@ fn querying_positions() {
     // larry: 12345 - 507         = 11838
     // jake:  23456 - 0           = 23456
     // total: 12345 + 23456 - 507 = 35294
-    let vp: Uint128 = query_helper(
+    let vpr: VotingPowerResponse = query_helper(
         deps.as_ref(),
         mock_env_at_timestamp(1696161600),
         QueryMsg::VotingPower {
             user: "larry".to_string(),
         },
     );
-    assert_eq!(vp, Uint128::new(11838));
+    assert_eq!(vpr.voting_power, Uint128::new(11838));
 
-    let vp: Uint128 = query_helper(
+    let vpr: VotingPowerResponse = query_helper(
         deps.as_ref(),
         mock_env_at_timestamp(1696161600),
         QueryMsg::VotingPower {
             user: "jake".to_string(),
         },
     );
-    assert_eq!(vp, Uint128::new(23456));
+    assert_eq!(vpr.voting_power, Uint128::new(23456));
 
     let tvp: Uint128 = query_helper(
         deps.as_ref(),
@@ -521,12 +521,34 @@ fn querying_positions() {
     assert_eq!(tvp, Uint128::new(35294));
 
     // query the voting power of a user who doesn't have a vesting position; should return zero
-    let vp: Uint128 = query_helper(
+    let vpr: VotingPowerResponse = query_helper(
         deps.as_ref(),
         mock_env_at_timestamp(1696161600),
         QueryMsg::VotingPower {
             user: "pumpkin".to_string(),
         },
     );
-    assert_eq!(vp, Uint128::zero());
+    assert_eq!(vpr.voting_power, Uint128::zero());
+
+    let vprs: Vec<VotingPowerResponse> = query_helper(
+        deps.as_ref(),
+        mock_env_at_timestamp(1696161600),
+        QueryMsg::VotingPowers {
+            start_after: None,
+            limit: None,
+        },
+    );
+    assert_eq!(
+        vprs,
+        vec![
+            VotingPowerResponse {
+                user: "jake".to_string(),
+                voting_power: Uint128::new(23456),
+            },
+            VotingPowerResponse {
+                user: "larry".to_string(),
+                voting_power: Uint128::new(11838),
+            }
+        ],
+    );
 }

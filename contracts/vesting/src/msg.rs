@@ -49,9 +49,14 @@ pub enum QueryMsg {
     Config {},
     /// Amount of MARS tokens currently locked in the vesting contract; returns `Uint128`
     TotalVotingPower {},
-    /// Amount of MARS tokens of a vesting recipient current locked in the contract; returns `Uint128`
+    /// Amount of MARS tokens of a vesting recipient current locked in the contract; returns `VotingPowerResponse`
     VotingPower {
         user: String,
+    },
+    /// Enumerate all vesting recipients and return their current voting power; returns `Vec<VotingPowerResponse>`
+    VotingPowers {
+        start_after: Option<String>,
+        limit: Option<u32>,
     },
     /// Details of a recipient's vesting position; returns `PositionResponse`
     ///
@@ -76,6 +81,14 @@ pub struct ConfigResponse {
     pub pending_owner: Option<String>,
     /// Schedule for token unlocking; this schedule is the same for all users
     pub unlock_schedule: Schedule,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct VotingPowerResponse {
+    /// Address of the user
+    pub user: String,
+    /// The user's current voting power, i.e. the amount of MARS tokens locked in vesting contract
+    pub voting_power: Uint128,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

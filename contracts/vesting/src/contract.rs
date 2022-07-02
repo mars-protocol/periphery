@@ -9,7 +9,8 @@ use cw_storage_plus::Bound;
 
 use crate::helpers::{compute_position_response, compute_withdrawable};
 use crate::msg::{
-    ConfigResponse, ExecuteMsg, InstantiateMsg, PositionResponse, QueryMsg, Schedule, VEST_DENOM,
+    ConfigResponse, ExecuteMsg, InstantiateMsg, PositionResponse, QueryMsg, Schedule,
+    VotingPowerResponse, VEST_DENOM,
 };
 use crate::state::{
     Position, OWNER, PENDING_OWNER, POSITIONS, TOTAL_VOTING_POWER, UNLOCK_SCHEDULE,
@@ -219,6 +220,10 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::VotingPower {
             user,
         } => to_binary(&query_voting_power(deps, api.addr_validate(&user)?)?),
+        QueryMsg::VotingPowers {
+            start_after,
+            limit,
+        } => to_binary(&query_voting_powers(deps, start_after, limit)?),
         QueryMsg::Position {
             user,
         } => to_binary(&query_position(deps, env.block.time.seconds(), api.addr_validate(&user)?)?),
@@ -241,12 +246,17 @@ pub fn query_total_voting_power(deps: Deps) -> StdResult<Uint128> {
     TOTAL_VOTING_POWER.load(deps.storage)
 }
 
-pub fn query_voting_power(deps: Deps, user_addr: Addr) -> StdResult<Uint128> {
-    match POSITIONS.may_load(deps.storage, &user_addr) {
-        Ok(Some(position)) => Ok(position.total - position.withdrawn),
-        Ok(None) => Ok(Uint128::zero()),
-        Err(err) => Err(err),
-    }
+pub fn query_voting_power(deps: Deps, user_addr: Addr) -> StdResult<VotingPowerResponse> {
+    let voting_power = match POSITIONS.may_load(deps.storage, &user_addr) {
+        Ok(Some(position)) => position.total - position.withdrawn,
+        Ok(None) => Uint128::zero(),
+        Err(err) => return Err(err),
+    };
+
+    Ok(VotingPowerResponse {
+        user: user_addr.to_string(),
+        voting_power,
+    })
 }
 
 pub fn query_position(deps: Deps, time: u64, user_addr: Addr) -> StdResult<PositionResponse> {
@@ -254,6 +264,35 @@ pub fn query_position(deps: Deps, time: u64, user_addr: Addr) -> StdResult<Posit
     let position = POSITIONS.load(deps.storage, &user_addr)?;
 
     Ok(compute_position_response(time, user_addr, &position, unlock_schedule))
+}
+
+pub fn query_voting_powers(
+    deps: Deps,
+    start_after: Option<String>,
+    limit: Option<u32>,
+) -> StdResult<Vec<VotingPowerResponse>> {
+    let addr: Addr;
+    let start = match &start_after {
+        Some(addr_str) => {
+            addr = deps.api.addr_validate(addr_str)?;
+            Some(Bound::exclusive(&addr))
+        }
+        None => None,
+    };
+
+    let limit = limit.unwrap_or(DEFAULT_LIMIT).min(MAX_LIMIT) as usize;
+
+    POSITIONS
+        .range(deps.storage, start, None, Order::Ascending)
+        .take(limit)
+        .map(|res| {
+            let (user_addr, position) = res?;
+            Ok(VotingPowerResponse {
+                user: user_addr.to_string(),
+                voting_power: position.total - position.withdrawn,
+            })
+        })
+        .collect()
 }
 
 pub fn query_positions(
