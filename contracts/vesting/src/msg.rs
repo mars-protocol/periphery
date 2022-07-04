@@ -66,7 +66,7 @@ pub enum QueryMsg {
     Positions {
         start_after: Option<String>,
         limit: Option<u32>,
-    }
+    },
 }
 
 pub type ConfigResponse = InstantiateMsg;
