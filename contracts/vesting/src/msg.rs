@@ -47,8 +47,6 @@ pub enum ExecuteMsg {
 pub enum QueryMsg {
     /// The contract's configurations; returns `ConfigResponse`
     Config {},
-    /// Amount of MARS tokens currently locked in the vesting contract; returns `Uint128`
-    TotalVotingPower {},
     /// Amount of MARS tokens of a vesting recipient current locked in the contract; returns `VotingPowerResponse`
     VotingPower {
         user: String,

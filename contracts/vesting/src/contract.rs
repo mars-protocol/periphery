@@ -12,9 +12,7 @@ use crate::msg::{
     ConfigResponse, ExecuteMsg, InstantiateMsg, PositionResponse, QueryMsg, Schedule,
     VotingPowerResponse, VEST_DENOM,
 };
-use crate::state::{
-    Position, OWNER, PENDING_OWNER, POSITIONS, TOTAL_VOTING_POWER, UNLOCK_SCHEDULE,
-};
+use crate::state::{Position, OWNER, PENDING_OWNER, POSITIONS, UNLOCK_SCHEDULE};
 
 const CONTRACT_NAME: &str = "crates.io:mars-vesting";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -37,7 +35,6 @@ pub fn instantiate(
 
     OWNER.save(deps.storage, &deps.api.addr_validate(&msg.owner)?)?;
     UNLOCK_SCHEDULE.save(deps.storage, &msg.unlock_schedule)?;
-    TOTAL_VOTING_POWER.save(deps.storage, &Uint128::zero())?;
 
     Ok(Response::new())
 }
@@ -115,11 +112,6 @@ pub fn create_position(
         },
     )?;
 
-    TOTAL_VOTING_POWER.update(
-        deps.storage,
-        |tvp| -> StdResult<_> { Ok(tvp + total) },
-    )?;
-
     let event = Event::new("mars/vesting/position_created")
         .add_attribute("user", user_addr)
         .add_attribute("total", total)
@@ -148,11 +140,6 @@ pub fn withdraw(deps: DepsMut, time: u64, user_addr: Addr) -> StdResult<Response
 
     position.withdrawn += withdrawable;
     POSITIONS.save(deps.storage, &user_addr, &position)?;
-
-    TOTAL_VOTING_POWER.update(
-        deps.storage,
-        |tvp| -> StdResult<_> { Ok(tvp - withdrawable) },
-    )?;
 
     let msg = CosmosMsg::Bank(BankMsg::Send {
         to_address: user_addr.to_string(),
@@ -216,7 +203,6 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     let api = deps.api;
     match msg {
         QueryMsg::Config {} => to_binary(&query_config(deps)?),
-        QueryMsg::TotalVotingPower {} => to_binary(&query_total_voting_power(deps)?),
         QueryMsg::VotingPower {
             user,
         } => to_binary(&query_voting_power(deps, api.addr_validate(&user)?)?),
@@ -240,10 +226,6 @@ pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
         pending_owner: PENDING_OWNER.may_load(deps.storage)?.map(String::from),
         unlock_schedule: UNLOCK_SCHEDULE.load(deps.storage)?,
     })
-}
-
-pub fn query_total_voting_power(deps: Deps) -> StdResult<Uint128> {
-    TOTAL_VOTING_POWER.load(deps.storage)
 }
 
 pub fn query_voting_power(deps: Deps, user_addr: Addr) -> StdResult<VotingPowerResponse> {

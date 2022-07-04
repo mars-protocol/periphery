@@ -513,13 +513,6 @@ fn querying_positions() {
     );
     assert_eq!(vpr.voting_power, Uint128::new(23456));
 
-    let tvp: Uint128 = query_helper(
-        deps.as_ref(),
-        mock_env_at_timestamp(1696161600),
-        QueryMsg::TotalVotingPower {},
-    );
-    assert_eq!(tvp, Uint128::new(35294));
-
     // query the voting power of a user who doesn't have a vesting position; should return zero
     let vpr: VotingPowerResponse = query_helper(
         deps.as_ref(),
