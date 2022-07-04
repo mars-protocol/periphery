@@ -1,20 +1,11 @@
-use cosmwasm_std::{Addr, Uint128};
+use cosmwasm_std::Uint128;
 use cw_storage_plus::{Item, Map};
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct Config {
-    /// Root of the Merkle tree, in base64 encoding; each leaf is a string with the format `{recipient},{amount}`
-    pub merkle_root: String,
-    /// UNIX timestamp after which unclaimed tokens can be transferred to the community pool
-    pub claim_deadline: u64,
-    /// Address of the community pool
-    pub community_pool: Addr,
-}
+/// Root of the Merkle tree, in base64 encoding; each leaf is a string with the format `{recipient},{amount}`
+pub const ROOT: Item<String> = Item::new("merkle_root");
 
-/// The contract's configurations
-pub const CONFIG: Item<Config> = Item::new("config");
+/// UNIX timestamp after which unclaimed tokens can be transferred to the community pool
+pub const DEADLINE: Item<u64> = Item::new("claim_deadline");
 
 /// The amount of tokens each user has claimed
 ///

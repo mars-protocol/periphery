@@ -9,7 +9,8 @@ use cw_storage_plus::Bound;
 
 use crate::crypto::{pubkey_to_addr, verify_proof, verify_signature};
 use crate::msg::{leaf, msg, ClaimedResponse, ConfigResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::state::{Config, CLAIMED, CONFIG};
+use crate::state::{CLAIMED, DEADLINE, ROOT};
+use crate::types::MarsMsg;
 
 const CONTRACT_NAME: &str = "crates.io:mars-airdrop";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -30,14 +31,8 @@ pub fn instantiate(
 ) -> StdResult<Response> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    CONFIG.save(
-        deps.storage,
-        &Config {
-            merkle_root: msg.merkle_root,
-            claim_deadline: env.block.time.seconds() + msg.claim_period,
-            community_pool: deps.api.addr_validate(&msg.community_pool)?,
-        },
-    )?;
+    ROOT.save(deps.storage, &msg.merkle_root)?;
+    DEADLINE.save(deps.storage, &(env.block.time.seconds() + msg.claim_period))?;
 
     Ok(Response::new())
 }
@@ -52,7 +47,7 @@ pub fn execute(
     env: Env,
     _info: MessageInfo,
     msg: ExecuteMsg,
-) -> StdResult<Response> {
+) -> StdResult<Response<MarsMsg>> {
     let api = deps.api;
     match msg {
         ExecuteMsg::Claim {
@@ -80,8 +75,8 @@ pub fn claim(
     amount: Uint128,
     proof: Vec<String>,
     signature: String,
-) -> StdResult<Response> {
-    let config = CONFIG.load(deps.storage)?;
+) -> StdResult<Response<MarsMsg>> {
+    let root = ROOT.load(deps.storage)?;
 
     let terra_acct = pubkey_to_addr(&terra_acct_pk, "terra")?;
 
@@ -110,7 +105,7 @@ pub fn claim(
     // The Merkle proof must be valid
     if !verify_proof(
         &leaf(&terra_acct, amount),
-        &config.merkle_root,
+        &root,
         &proof,
     )? {
         return Err(StdError::generic_err("invalid proof"));
@@ -129,13 +124,13 @@ pub fn claim(
     Ok(Response::new().add_message(msg).add_event(event))
 }
 
-pub fn clawback(deps: DepsMut, env: Env) -> StdResult<Response> {
+pub fn clawback(deps: DepsMut, env: Env) -> StdResult<Response<MarsMsg>> {
     let current_time = env.block.time.seconds();
-    let config = CONFIG.load(deps.storage)?;
+    let deadline = DEADLINE.load(deps.storage)?;
 
-    if current_time < config.claim_deadline {
+    if current_time < deadline {
         return Err(StdError::generic_err(
-            format!("clawback can only be invoked after {}", config.claim_deadline),
+            format!("clawback can only be invoked after {}", deadline),
         ));
     }
 
@@ -147,10 +142,7 @@ pub fn clawback(deps: DepsMut, env: Env) -> StdResult<Response> {
         .collect::<Vec<_>>()
         .join(",");
 
-    let msg = CosmosMsg::Bank(BankMsg::Send {
-        to_address: config.community_pool.into(),
-        amount,
-    });
+    let msg = CosmosMsg::Custom(MarsMsg::FundCommunityPool { amount });
 
     let event = Event::new("mars/airdrop/clawed_back")
         .add_attribute("timestamp", current_time.to_string())
@@ -189,11 +181,9 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 }
 
 pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
-    let config = CONFIG.load(deps.storage)?;
     Ok(ConfigResponse {
-        merkle_root: config.merkle_root,
-        claim_deadline: config.claim_deadline,
-        community_pool: config.community_pool.into(),
+        merkle_root: ROOT.load(deps.storage)?,
+        claim_deadline: DEADLINE.load(deps.storage)?,
     })
 }
 
@@ -245,11 +235,11 @@ pub fn query_verify_proof(
     amount: Uint128,
     merkle_proof: Vec<String>,
 ) -> StdResult<bool> {
-    let config = CONFIG.load(deps.storage)?;
+    let merkle_root = ROOT.load(deps.storage)?;
 
     verify_proof(
         &leaf(&terra_acct, amount),
-        &config.merkle_root,
+        &merkle_root,
         &merkle_proof,
     )
 }
@@ -287,7 +277,6 @@ mod test {
             InstantiateMsg {
                 merkle_root: "a7da979c32f9ffeca6214558c560780cf06b09e52fe670f16c532b20016d7f38".to_string(),
                 claim_period: 10000,
-                community_pool: "community_pool".to_string(),
             },
         )
         .unwrap();
@@ -460,8 +449,7 @@ mod test {
         assert_eq!(res.messages.len(), 1);
         assert_eq!(
             res.messages[0],
-            SubMsg::new(CosmosMsg::Bank(BankMsg::Send {
-                to_address: "community_pool".to_string(),
+            SubMsg::new(CosmosMsg::Custom(MarsMsg::FundCommunityPool {
                 amount: coins(1000000000, "umars"),
             })),
         );

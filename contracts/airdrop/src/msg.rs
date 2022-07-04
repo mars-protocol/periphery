@@ -9,8 +9,6 @@ pub struct InstantiateMsg {
     /// The time period available for claiming the airdrop, in seconds. Once the period has elapsed,
     /// anyone can invoke `ExecuteMsg::Clawback` to transfer unclaimed tokens to the community pool.
     pub claim_period: u64,
-    /// Address of the community pool
-    pub community_pool: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -71,8 +69,6 @@ pub struct ConfigResponse {
     pub merkle_root: String,
     /// UNIX timestamp after which unclaimed tokens can be transferred to the community pool
     pub claim_deadline: u64,
-    /// Address of the community pool module account
-    pub community_pool: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
