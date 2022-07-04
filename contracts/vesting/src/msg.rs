@@ -32,14 +32,10 @@ pub enum ExecuteMsg {
         user: String,
         vest_schedule: Schedule,
     },
-    /// Propose to transfer the contract's ownership to another account
-    TransferOwnership {
-        new_owner: String,
-    },
-    /// Accept the proposed ownership transfer
-    AcceptOwnership {},
     /// Withdraw vested and unlocked MARS tokens
     Withdraw {},
+    /// Transfer the contract's ownership to another account
+    TransferOwnership(String),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -73,15 +69,7 @@ pub enum QueryMsg {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct ConfigResponse {
-    /// The contract's owner
-    pub owner: String,
-    /// If there is an ongoing transfer of ownership, address of the pending owner
-    pub pending_owner: Option<String>,
-    /// Schedule for token unlocking; this schedule is the same for all users
-    pub unlock_schedule: Schedule,
-}
+pub type ConfigResponse = InstantiateMsg;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct VotingPowerResponse {

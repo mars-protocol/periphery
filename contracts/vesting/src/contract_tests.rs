@@ -52,7 +52,6 @@ fn proper_instantiation() {
         config,
         ConfigResponse {
             owner: "owner".to_string(),
-            pending_owner: None,
             unlock_schedule: Schedule {
                 start_time: 1662033600,
                 cliff: 0,
@@ -66,54 +65,22 @@ fn proper_instantiation() {
 fn transferring_ownership() {
     let mut deps = setup_test();
 
-    // non-owner cannot propose a transfer
+    // non-owner cannot transfer ownership
     let err = execute(
         deps.as_mut(),
         mock_env(),
         mock_info("non_owner", &[]),
-        ExecuteMsg::TransferOwnership {
-            new_owner: "new_owner".to_string(),
-        },
+        ExecuteMsg::TransferOwnership("new_owner".to_string()),
     )
     .unwrap_err();
-    assert_eq!(err, StdError::generic_err("only owner can proposal ownership transfers"));
+    assert_eq!(err, StdError::generic_err("only owner can transfer ownership"));
 
     // owner can propose a transfer
     let res = execute(
         deps.as_mut(),
         mock_env(),
         mock_info("owner", &[]),
-        ExecuteMsg::TransferOwnership {
-            new_owner: "new_owner".to_string(),
-        },
-    )
-    .unwrap();
-    assert_eq!(res.messages.len(), 0);
-
-    let config: ConfigResponse = query_helper(
-        deps.as_ref(),
-        mock_env(),
-        QueryMsg::Config {},
-    );
-    assert_eq!(config.owner, "owner".to_string());
-    assert_eq!(config.pending_owner, Some("new_owner".to_string()));
-
-    // non-pending owner cannot accept ownership
-    let err = execute(
-        deps.as_mut(),
-        mock_env(),
-        mock_info("non_new_owner", &[]),
-        ExecuteMsg::AcceptOwnership {},
-    )
-    .unwrap_err();
-    assert_eq!(err, StdError::generic_err("only pending owner an accept ownership".to_string()));
-
-    // pending owner can accept ownership
-    let res = execute(
-        deps.as_mut(),
-        mock_env(),
-        mock_info("new_owner", &[]),
-        ExecuteMsg::AcceptOwnership {},
+        ExecuteMsg::TransferOwnership("new_owner".to_string()),
     )
     .unwrap();
     assert_eq!(res.messages.len(), 0);
@@ -124,7 +91,6 @@ fn transferring_ownership() {
         QueryMsg::Config {},
     );
     assert_eq!(config.owner, "new_owner".to_string());
-    assert_eq!(config.pending_owner, None);
 }
 
 #[test]

@@ -12,7 +12,7 @@ use crate::msg::{
     ConfigResponse, ExecuteMsg, InstantiateMsg, PositionResponse, QueryMsg, Schedule,
     VotingPowerResponse, VEST_DENOM,
 };
-use crate::state::{Position, OWNER, PENDING_OWNER, POSITIONS, UNLOCK_SCHEDULE};
+use crate::state::{Position, OWNER, POSITIONS, UNLOCK_SCHEDULE};
 
 const CONTRACT_NAME: &str = "crates.io:mars-vesting";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -56,11 +56,8 @@ pub fn execute(
             user,
             vest_schedule,
         } => create_position(deps, info, api.addr_validate(&user)?, vest_schedule),
-        ExecuteMsg::TransferOwnership {
-            new_owner,
-        } => transfer_ownership(deps, info.sender, api.addr_validate(&new_owner)?),
-        ExecuteMsg::AcceptOwnership {} => accept_ownership(deps, info.sender),
         ExecuteMsg::Withdraw {} => withdraw(deps, env.block.time.seconds(), info.sender),
+        ExecuteMsg::TransferOwnership(new_owner) => transfer_ownership(deps, info.sender, api.addr_validate(&new_owner)?),
     }
 }
 
@@ -161,35 +158,14 @@ pub fn transfer_ownership(
 ) -> StdResult<Response> {
     let owner_addr = OWNER.load(deps.storage)?;
     if sender_addr != owner_addr {
-        return Err(StdError::generic_err("only owner can proposal ownership transfers"));
+        return Err(StdError::generic_err("only owner can transfer ownership"));
     }
 
-    PENDING_OWNER.save(deps.storage, &new_owner_addr)?;
+    OWNER.save(deps.storage, &new_owner_addr)?;
 
     let event = Event::new("mars/vesting/ownership_transfer_proposed")
-        .add_attribute("current_owner", owner_addr)
-        .add_attribute("pending_owner", new_owner_addr);
-
-    Ok(Response::new().add_event(event))
-}
-
-pub fn accept_ownership(
-    deps: DepsMut,
-    sender_addr: Addr,
-) -> StdResult<Response> {
-    let pending_owner_addr = PENDING_OWNER.load(deps.storage)?;
-    if sender_addr != pending_owner_addr {
-        return Err(StdError::generic_err("only pending owner an accept ownership"));
-    }
-
-    let previous_owner_addr = OWNER.load(deps.storage)?;
-    OWNER.save(deps.storage, &pending_owner_addr)?;
-
-    PENDING_OWNER.remove(deps.storage);
-
-    let event = Event::new("mars/vesting/ownership_transfer_completed")
-        .add_attribute("previous_owner", previous_owner_addr)
-        .add_attribute("new_owner", pending_owner_addr);
+        .add_attribute("previous_owner", owner_addr)
+        .add_attribute("new_owner", new_owner_addr);
 
     Ok(Response::new().add_event(event))
 }
@@ -223,7 +199,6 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
     Ok(ConfigResponse {
         owner: OWNER.load(deps.storage)?.into(),
-        pending_owner: PENDING_OWNER.may_load(deps.storage)?.map(String::from),
         unlock_schedule: UNLOCK_SCHEDULE.load(deps.storage)?,
     })
 }
