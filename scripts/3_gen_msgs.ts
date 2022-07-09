@@ -47,21 +47,34 @@ const devAcct = "mars1z926ax906k0ycsuckele6x5hh66e2m4m09whw6";
 // the `gov` module account
 const govModuleAcct = "mars10d07y265gmmuvt4z0w9aw880jnsr700j8l2urg";
 
-const airdrop = fs.readFileSync(path.join(__dirname, "../artifacts/mars_airdrop.wasm"));
-const airdropStr = airdrop.toString("base64");
-
 const vesting = fs.readFileSync(path.join(__dirname, "../artifacts/mars_vesting.wasm"));
 const vestingStr = vesting.toString("base64");
 
-// - upload airdrop code
-// - instantiate airdrop contract
+const airdrop = fs.readFileSync(path.join(__dirname, "../artifacts/mars_airdrop.wasm"));
+const airdropStr = airdrop.toString("base64");
+
+
 // - upload vesting code
 // - instantiate vesting contract
 // - create vesting allocations
 // - transfer vesting ownership to gov module account
+//
+// - upload airdrop code
+// - instantiate airdrop contract
+//
 // - TODO: upload cw3 code
 // - TODO: instantiate cw3 multisig contracts
 const msgs: Msg[] = [
+  {
+    store_code: {
+      sender: devAcct,
+      wasm_byte_code: vestingStr,
+      instantiate_permission: {
+        permission: "OnlyAddress",
+        address: devAcct,
+      },
+    },
+  },
   {
     store_code: {
       sender: devAcct,
@@ -77,34 +90,6 @@ const msgs: Msg[] = [
       sender: devAcct,
       admin: govModuleAcct,
       code_id: 1,
-      label: "mars/airdrop",
-      msg: {
-        merkle_root: "a7da979c32f9ffeca6214558c560780cf06b09e52fe670f16c532b20016d7f38",
-        claim_period: 0, // to test clawback, we set claim period to zero
-      },
-      funds: [
-        {
-          denom: "umars",
-          amount: "1987821078",
-        },
-      ],
-    },
-  },
-  {
-    store_code: {
-      sender: devAcct,
-      wasm_byte_code: vestingStr,
-      instantiate_permission: {
-        permission: "OnlyAddress",
-        address: devAcct,
-      },
-    },
-  },
-  {
-    instantiate_contract: {
-      sender: devAcct,
-      admin: govModuleAcct,
-      code_id: 2,
       label: "mars/vesting",
       msg: {
         owner: devAcct,
@@ -120,7 +105,7 @@ const msgs: Msg[] = [
   {
     execute_contract: {
       sender: devAcct,
-      contract: "mars1nc5tatafv6eyq7llkr2gv50ff9e22mnf70qgjlv737ktmt4eswrqhnhf0l", // vesting
+      contract: "mars14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9smxjtde", // vesting
       msg: {
         create_position: {
           user: devAcct,
@@ -142,11 +127,29 @@ const msgs: Msg[] = [
   {
     execute_contract: {
       sender: devAcct,
-      contract: "mars1nc5tatafv6eyq7llkr2gv50ff9e22mnf70qgjlv737ktmt4eswrqhnhf0l", // vesting
+      contract: "mars14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9smxjtde", // vesting
       msg: {
         transfer_ownership: govModuleAcct,
       },
       funds: [],
+    },
+  },
+  {
+    instantiate_contract: {
+      sender: devAcct,
+      admin: govModuleAcct,
+      code_id: 2,
+      label: "mars/airdrop",
+      msg: {
+        merkle_root: "a7da979c32f9ffeca6214558c560780cf06b09e52fe670f16c532b20016d7f38",
+        claim_period: 0, // to test clawback, we set claim period to zero
+      },
+      funds: [
+        {
+          denom: "umars",
+          amount: "1987821078",
+        },
+      ],
     },
   },
 ];
