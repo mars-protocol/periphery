@@ -6,9 +6,6 @@ use serde::{Deserialize, Serialize};
 pub struct InstantiateMsg {
     /// Root of the Merkle tree, in hex encoding; each leaf is the SHA256 hash of the string `{recipient},{amount}`
     pub merkle_root: String,
-    /// The time period available for claiming the airdrop, in seconds. Once the period has elapsed,
-    /// anyone can invoke `ExecuteMsg::Clawback` to transfer unclaimed tokens to the community pool.
-    pub claim_period: u64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -30,7 +27,12 @@ pub enum ExecuteMsg {
         proof: Vec<String>,
         signature: String,
     },
-    /// Once the claim period has elapsed, transfer unclaimed tokens to the community pool
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum SudoMsg {
+    /// Reclaim unclaimed tokens to the community pool
     Clawback {},
 }
 
@@ -63,13 +65,7 @@ pub enum QueryMsg {
     },
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct ConfigResponse {
-    /// Root of the Merkle tree, in hex encoding; each leaf is the SHA256 hash of the string `{terra-acct}:{amount}`
-    pub merkle_root: String,
-    /// UNIX timestamp after which unclaimed tokens can be transferred to the community pool
-    pub claim_deadline: u64,
-}
+pub type ConfigResponse = InstantiateMsg;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct ClaimedResponse {

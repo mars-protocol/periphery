@@ -8,8 +8,10 @@ use cw2::set_contract_version;
 use cw_storage_plus::Bound;
 
 use crate::crypto::{pubkey_to_addr, verify_proof, verify_signature};
-use crate::msg::{leaf, msg, ClaimedResponse, ConfigResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::state::{CLAIMED, DEADLINE, ROOT};
+use crate::msg::{
+    leaf, msg, ClaimedResponse, ConfigResponse, ExecuteMsg, InstantiateMsg, QueryMsg, SudoMsg,
+};
+use crate::state::{CLAIMED, ROOT};
 use crate::types::MarsMsg;
 
 const CONTRACT_NAME: &str = "crates.io:mars-airdrop";
@@ -25,14 +27,13 @@ const DEFAULT_LIMIT: u32 = 10;
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> StdResult<Response> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     ROOT.save(deps.storage, &msg.merkle_root)?;
-    DEADLINE.save(deps.storage, &(env.block.time.seconds() + msg.claim_period))?;
 
     Ok(Response::new())
 }
@@ -44,7 +45,7 @@ pub fn instantiate(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     _info: MessageInfo,
     msg: ExecuteMsg,
 ) -> StdResult<Response<MarsMsg>> {
@@ -64,7 +65,6 @@ pub fn execute(
             proof,
             signature,
         ),
-        ExecuteMsg::Clawback {} => clawback(deps, env),
     }
 }
 
@@ -124,16 +124,18 @@ pub fn claim(
     Ok(Response::new().add_message(msg).add_event(event))
 }
 
-pub fn clawback(deps: DepsMut, env: Env) -> StdResult<Response<MarsMsg>> {
-    let current_time = env.block.time.seconds();
-    let deadline = DEADLINE.load(deps.storage)?;
+//--------------------------------------------------------------------------------------------------
+// Sudo
+//--------------------------------------------------------------------------------------------------
 
-    if current_time < deadline {
-        return Err(StdError::generic_err(
-            format!("clawback can only be invoked after {}", deadline),
-        ));
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn sudo(deps: DepsMut, env: Env, msg: SudoMsg) -> StdResult<Response<MarsMsg>> {
+    match msg {
+        SudoMsg::Clawback {} => clawback(deps, env),
     }
+}
 
+pub fn clawback(deps: DepsMut, env: Env) -> StdResult<Response<MarsMsg>> {
     let amount = deps.querier.query_all_balances(&env.contract.address)?;
 
     let amount_str = amount
@@ -145,7 +147,7 @@ pub fn clawback(deps: DepsMut, env: Env) -> StdResult<Response<MarsMsg>> {
     let msg = CosmosMsg::Custom(MarsMsg::FundCommunityPool { amount });
 
     let event = Event::new("mars/airdrop/clawed_back")
-        .add_attribute("timestamp", current_time.to_string())
+        .add_attribute("timestamp", env.block.time.seconds().to_string())
         .add_attribute("amount", amount_str);
 
     Ok(Response::new().add_message(msg).add_event(event))
@@ -183,7 +185,6 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
     Ok(ConfigResponse {
         merkle_root: ROOT.load(deps.storage)?,
-        claim_deadline: DEADLINE.load(deps.storage)?,
     })
 }
 
@@ -276,7 +277,6 @@ mod test {
             mock_info("deployer", &[]),
             InstantiateMsg {
                 merkle_root: "a7da979c32f9ffeca6214558c560780cf06b09e52fe670f16c532b20016d7f38".to_string(),
-                claim_period: 10000,
             },
         )
         .unwrap();
@@ -426,23 +426,10 @@ mod test {
     fn clawing_back() {
         let mut deps = setup_test();
 
-        // cannot claw back before the deadline
-        let err = execute(
+        let res = sudo(
             deps.as_mut(),
-            mock_env_at_timestamp(15000),
-            mock_info("admin", &[]),
-            ExecuteMsg::Clawback {},
-        )
-        .unwrap_err();
-
-        assert_eq!(err, StdError::generic_err("clawback can only be invoked after 20000"));
-
-        // can clawback at or after deadline
-        let res = execute(
-            deps.as_mut(),
-            mock_env_at_timestamp(20000),
-            mock_info("admin", &[]),
-            ExecuteMsg::Clawback {},
+            mock_env(),
+            SudoMsg::Clawback {},
         )
         .unwrap();
 
