@@ -1,5 +1,4 @@
 import { MerkleTree } from "merkletreejs";
-// import { SHA256, enc } from "crypto-js";
 
 import { sha256 } from "./hash";
 
@@ -33,6 +32,38 @@ const users: User[] = [
   {
     address: "terra1e8ryd9ezefuucd4mje33zdms9m2s90m57878v9",
     amount: 999999999
+  },
+  {
+    address: "terra17tv2hvwpg0ukqgd2y5ct2w54fyan7z0zxrm2f9",
+    amount: 4237784,
+  },
+  {
+    address: "terra1lkccuqgj6sjwjn8gsa9xlklqv4pmrqg9dx2fxc",
+    amount: 7324894,
+  },
+  {
+    address: "terra1333veey879eeqcff8j3gfcgwt8cfrg9mq20v6f",
+    amount: 42873
+  },
+  {
+    address: "terra1fmcjjt6yc9wqup2r06urnrd928jhrde6gcld6n",
+    amount: 74328473
+  },
+  {
+    address: "terra1u48kjlf2n0s77v0yhkmle58rdqgrqmdam0cv56",
+    amount: 723443,
+  },
+  {
+    address: "terra1sspv8dyfg2p4phxu29k28zm3t3kmx7x5ljw9ae",
+    amount: 42743987,
+  },
+  {
+    address: "terra1wdqnf2ktzcqdnm5sl20hnwrzzlfv5mswmfn52r",
+    amount: 723943,
+  },
+  {
+    address: "mars1z926ax906k0ycsuckele6x5hh66e2m4m09whw6",
+    amount: 88888888
   }
 ];
 
@@ -50,6 +81,9 @@ function generateProof(users: User[], index: number) {
   console.log("amount:", user.amount);
   console.log("leaf:", leaf.toString("hex"));
   console.log("proof:", proof);
+
+  const sum = users.map((user) => user.amount).reduce((partialSum, a) => partialSum + a, 0);
+  console.log("total amount:", sum);
 }
 
 function testCase1() {
