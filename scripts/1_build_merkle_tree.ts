@@ -62,7 +62,7 @@ const users: User[] = [
     amount: 723943,
   },
   {
-    address: "mars1z926ax906k0ycsuckele6x5hh66e2m4m09whw6",
+    address: "terra1z926ax906k0ycsuckele6x5hh66e2m4m5udwep",
     amount: 88888888
   }
 ];
