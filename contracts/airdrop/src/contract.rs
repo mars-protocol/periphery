@@ -57,14 +57,7 @@ pub fn execute(
             amount,
             proof,
             signature,
-        } => claim(
-            deps,
-            terra_acct_pk,
-            api.addr_validate(&mars_acct)?,
-            amount,
-            proof,
-            signature,
-        ),
+        } => claim(deps, terra_acct_pk, api.addr_validate(&mars_acct)?, amount, proof, signature),
     }
 }
 
@@ -81,33 +74,22 @@ pub fn claim(
     let terra_acct = pubkey_to_addr(&terra_acct_pk, "terra")?;
 
     // The Terra account must not have already claimed
-    CLAIMED.update(
-        deps.storage,
-        &terra_acct,
-        |claimed| {
-            if claimed.is_some() {
-                return Err(StdError::generic_err("account has already claimed"));
-            }
-            Ok(amount)
-        },
-    )?;
+    CLAIMED.update(deps.storage, &terra_acct, |claimed| {
+        if claimed.is_some() {
+            return Err(StdError::generic_err("account has already claimed"));
+        }
+        Ok(amount)
+    })?;
 
     // The signature must be valid
-    if !verify_signature(
-        deps.api,
-        &msg(&terra_acct, &mars_acct.to_string(), amount),
-        &terra_acct_pk,
-        &signature,
-    )? {
+    let msg = msg(&terra_acct, &mars_acct.to_string(), amount);
+    if !verify_signature(deps.api, &msg, &terra_acct_pk, &signature)? {
         return Err(StdError::generic_err("invalid signature"));
     }
 
     // The Merkle proof must be valid
-    if !verify_proof(
-        &leaf(&terra_acct, amount),
-        &root,
-        &proof,
-    )? {
+    let leaf = leaf(&terra_acct, amount);
+    if !verify_proof(&leaf, &root, &proof)? {
         return Err(StdError::generic_err("invalid proof"));
     }
 
@@ -136,14 +118,12 @@ pub fn sudo(deps: DepsMut, env: Env, msg: SudoMsg) -> StdResult<Response<MarsMsg
 pub fn clawback(deps: DepsMut, env: Env) -> StdResult<Response<MarsMsg>> {
     let amount = deps.querier.query_all_balances(&env.contract.address)?;
 
-    let amount_str = amount
-        .iter()
-        .map(|coin| coin.to_string())
-        .collect::<Vec<_>>()
-        .join(",");
+    let amount_str = amount.iter().map(|coin| coin.to_string()).collect::<Vec<_>>().join(",");
 
     Ok(Response::new()
-        .add_message(CosmosMsg::Custom(MarsMsg::FundCommunityPool { amount }))
+        .add_message(CosmosMsg::Custom(MarsMsg::FundCommunityPool {
+            amount,
+        }))
         .add_attribute("action", "mars/airdrop/clawback")
         .add_attribute("timestamp", env.block.time.seconds().to_string())
         .add_attribute("amount", amount_str))
@@ -195,7 +175,7 @@ pub fn query_all_claimed(
     deps: Deps,
     start_after: Option<String>,
     limit: Option<u32>,
-) -> StdResult<Vec<ClaimedResponse>>{
+) -> StdResult<Vec<ClaimedResponse>> {
     let start = start_after.as_ref().map(|terra_acct| Bound::exclusive(terra_acct.as_str()));
     let limit = limit.unwrap_or(DEFAULT_LIMIT).min(MAX_LIMIT) as usize;
 
@@ -204,7 +184,10 @@ pub fn query_all_claimed(
         .take(limit)
         .map(|res| {
             let (terra_acct, amount) = res?;
-            Ok(ClaimedResponse { terra_acct, amount })
+            Ok(ClaimedResponse {
+                terra_acct,
+                amount,
+            })
         })
         .collect()
 }
@@ -218,12 +201,7 @@ pub fn query_verify_signature(
 ) -> StdResult<bool> {
     let terra_acct = pubkey_to_addr(&terra_acct_pk, "terra")?;
 
-    verify_signature(
-        deps.api,
-        &msg(&terra_acct, &mars_acct, amount),
-        &terra_acct_pk,
-        &signature,
-    )
+    verify_signature(deps.api, &msg(&terra_acct, &mars_acct, amount), &terra_acct_pk, &signature)
 }
 
 pub fn query_verify_proof(
@@ -234,11 +212,7 @@ pub fn query_verify_proof(
 ) -> StdResult<bool> {
     let merkle_root = ROOT.load(deps.storage)?;
 
-    verify_proof(
-        &leaf(&terra_acct, amount),
-        &merkle_root,
-        &merkle_proof,
-    )
+    verify_proof(&leaf(&terra_acct, amount), &merkle_root, &merkle_proof)
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -253,6 +227,8 @@ mod test {
         MOCK_CONTRACT_ADDR,
     };
     use cosmwasm_std::{from_binary, Empty, OwnedDeps, SubMsg, Timestamp};
+
+    const MOCK_ROOT: &str = "a7da979c32f9ffeca6214558c560780cf06b09e52fe670f16c532b20016d7f38";
 
     fn mock_env_at_timestamp(seconds: u64) -> Env {
         let mut env = mock_env();
@@ -272,7 +248,7 @@ mod test {
             mock_env_at_timestamp(10000),
             mock_info("deployer", &[]),
             InstantiateMsg {
-                merkle_root: "a7da979c32f9ffeca6214558c560780cf06b09e52fe670f16c532b20016d7f38".to_string(),
+                merkle_root: MOCK_ROOT.to_string(),
             },
         )
         .unwrap();
@@ -422,12 +398,7 @@ mod test {
     fn clawing_back() {
         let mut deps = setup_test();
 
-        let res = sudo(
-            deps.as_mut(),
-            mock_env(),
-            SudoMsg::Clawback {},
-        )
-        .unwrap();
+        let res = sudo(deps.as_mut(), mock_env(), SudoMsg::Clawback {}).unwrap();
 
         assert_eq!(res.messages.len(), 1);
         assert_eq!(

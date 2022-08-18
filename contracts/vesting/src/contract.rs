@@ -44,12 +44,7 @@ pub fn instantiate(
 //--------------------------------------------------------------------------------------------------
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn execute(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    msg: ExecuteMsg,
-) -> StdResult<Response> {
+pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> StdResult<Response> {
     let api = deps.api;
     match msg {
         ExecuteMsg::CreatePosition {
@@ -57,7 +52,9 @@ pub fn execute(
             vest_schedule,
         } => create_position(deps, info, api.addr_validate(&user)?, vest_schedule),
         ExecuteMsg::Withdraw {} => withdraw(deps, env.block.time.seconds(), info.sender),
-        ExecuteMsg::TransferOwnership(new_owner) => transfer_ownership(deps, info.sender, api.addr_validate(&new_owner)?),
+        ExecuteMsg::TransferOwnership(new_owner) => {
+            transfer_ownership(deps, info.sender, api.addr_validate(&new_owner)?)
+        }
     }
 }
 
@@ -75,17 +72,19 @@ pub fn create_position(
 
     // must send exactly one coin
     if info.funds.len() != 1 {
-        return Err(StdError::generic_err(
-            format!("wrong number of coins: expecting 1, received {}", info.funds.len()),
-        ));
+        return Err(StdError::generic_err(format!(
+            "wrong number of coins: expecting 1, received {}",
+            info.funds.len()
+        )));
     }
 
     // the coin must be the vesting coin
     let coin = &info.funds[0];
     if coin.denom != VEST_DENOM {
-        return Err(StdError::generic_err(
-            format!("wrong denom: expecting {}, received {}", VEST_DENOM, coin.denom),
-        ));
+        return Err(StdError::generic_err(format!(
+            "wrong denom: expecting {}, received {}",
+            VEST_DENOM, coin.denom
+        )));
     }
 
     // the amount must be greater than zero
@@ -94,20 +93,16 @@ pub fn create_position(
         return Err(StdError::generic_err("wrong amount: must be greater than zero"));
     }
 
-    POSITIONS.update(
-        deps.storage,
-        &user_addr,
-        |position| {
-            if position.is_some() {
-                return Err(StdError::generic_err("user has a vesting position"));
-            }
-            Ok(Position {
-                total,
-                vest_schedule,
-                withdrawn: Uint128::zero(),
-            })
-        },
-    )?;
+    POSITIONS.update(deps.storage, &user_addr, |position| {
+        if position.is_some() {
+            return Err(StdError::generic_err("user has a vesting position"));
+        }
+        Ok(Position {
+            total,
+            vest_schedule,
+            withdrawn: Uint128::zero(),
+        })
+    })?;
 
     Ok(Response::new()
         .add_attribute("action", "mars/vesting/position_created")

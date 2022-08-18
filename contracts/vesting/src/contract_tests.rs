@@ -8,7 +8,8 @@ use cosmwasm_std::{
 
 use crate::contract::{execute, instantiate, query};
 use crate::msg::{
-    ConfigResponse, ExecuteMsg, InstantiateMsg, PositionResponse, QueryMsg, Schedule, VotingPowerResponse,
+    ConfigResponse, ExecuteMsg, InstantiateMsg, PositionResponse, QueryMsg, Schedule,
+    VotingPowerResponse,
 };
 use crate::state::{Position, POSITIONS};
 
@@ -34,7 +35,7 @@ fn setup_test() -> OwnedDeps<MockStorage, MockApi, MockQuerier, Empty> {
             unlock_schedule: Schedule {
                 start_time: 1662033600, // 2022-09-01
                 cliff: 0,
-                duration: 63072000,     // two years (365 * 24 * 60 * 60 * 2)
+                duration: 63072000, // two years (365 * 24 * 60 * 60 * 2)
             },
         },
     )
@@ -85,11 +86,7 @@ fn transferring_ownership() {
     .unwrap();
     assert_eq!(res.messages.len(), 0);
 
-    let config: ConfigResponse = query_helper(
-        deps.as_ref(),
-        mock_env(),
-        QueryMsg::Config {},
-    );
+    let config: ConfigResponse = query_helper(deps.as_ref(), mock_env(), QueryMsg::Config {});
     assert_eq!(config.owner, "new_owner".to_string());
 }
 
@@ -107,23 +104,12 @@ fn creating_positions() {
     };
 
     // non-owner cannot create positions
-    let err = execute(
-        deps.as_mut(),
-        mock_env(),
-        mock_info("non_owner", &[]),
-        msg.clone(),
-    )
-    .unwrap_err();
+    let err =
+        execute(deps.as_mut(), mock_env(), mock_info("non_owner", &[]), msg.clone()).unwrap_err();
     assert_eq!(err, StdError::generic_err("only owner can create allocations"));
 
     // cannot create a position without sending a coin
-    let err = execute(
-        deps.as_mut(),
-        mock_env(),
-        mock_info("owner", &[]),
-        msg.clone(),
-    )
-    .unwrap_err();
+    let err = execute(deps.as_mut(), mock_env(), mock_info("owner", &[]), msg.clone()).unwrap_err();
     assert_eq!(err, StdError::generic_err("wrong number of coins: expecting 1, received 0"));
 
     // cannot create a position sending more than one coin
@@ -147,13 +133,9 @@ fn creating_positions() {
     assert_eq!(err, StdError::generic_err("wrong denom: expecting umars, received uosmo"));
 
     // cannot create a position with the correct coin but with zero amount
-    let err = execute(
-        deps.as_mut(),
-        mock_env(),
-        mock_info("owner", &[coin(0, "umars")]),
-        msg.clone(),
-    )
-    .unwrap_err();
+    let err =
+        execute(deps.as_mut(), mock_env(), mock_info("owner", &[coin(0, "umars")]), msg.clone())
+            .unwrap_err();
     assert_eq!(err, StdError::generic_err("wrong amount: must be greater than zero"));
 
     // properly create a position
@@ -352,7 +334,7 @@ fn querying_positions() {
             vest_schedule: Schedule {
                 start_time: 612964800, // 1989-06-04
                 cliff: 0,
-                duration: 1040688000,  // 33 years
+                duration: 1040688000, // 33 years
             },
         },
     )
@@ -401,7 +383,7 @@ fn querying_positions() {
         vest_schedule: Schedule {
             start_time: 612964800, // 1989-06-04
             cliff: 0,
-            duration: 1040688000,  // 33 years
+            duration: 1040688000, // 33 years
         },
     };
 
