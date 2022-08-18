@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    coins, to_binary, Addr, BankMsg, Binary, CosmosMsg, Deps, DepsMut, Env, Event, MessageInfo,
-    Order, Response, StdError, StdResult, Uint128,
+    coins, to_binary, Addr, BankMsg, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Order,
+    Response, StdError, StdResult, Uint128,
 };
 use cw2::set_contract_version;
 use cw_storage_plus::Bound;
@@ -44,12 +44,7 @@ pub fn instantiate(
 //--------------------------------------------------------------------------------------------------
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn execute(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    msg: ExecuteMsg,
-) -> StdResult<Response> {
+pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> StdResult<Response> {
     let api = deps.api;
     match msg {
         ExecuteMsg::CreatePosition {
@@ -57,7 +52,9 @@ pub fn execute(
             vest_schedule,
         } => create_position(deps, info, api.addr_validate(&user)?, vest_schedule),
         ExecuteMsg::Withdraw {} => withdraw(deps, env.block.time.seconds(), info.sender),
-        ExecuteMsg::TransferOwnership(new_owner) => transfer_ownership(deps, info.sender, api.addr_validate(&new_owner)?),
+        ExecuteMsg::TransferOwnership(new_owner) => {
+            transfer_ownership(deps, info.sender, api.addr_validate(&new_owner)?)
+        }
     }
 }
 
@@ -75,17 +72,19 @@ pub fn create_position(
 
     // must send exactly one coin
     if info.funds.len() != 1 {
-        return Err(StdError::generic_err(
-            format!("wrong number of coins: expecting 1, received {}", info.funds.len()),
-        ));
+        return Err(StdError::generic_err(format!(
+            "wrong number of coins: expecting 1, received {}",
+            info.funds.len()
+        )));
     }
 
     // the coin must be the vesting coin
     let coin = &info.funds[0];
     if coin.denom != VEST_DENOM {
-        return Err(StdError::generic_err(
-            format!("wrong denom: expecting {}, received {}", VEST_DENOM, coin.denom),
-        ));
+        return Err(StdError::generic_err(format!(
+            "wrong denom: expecting {}, received {}",
+            VEST_DENOM, coin.denom
+        )));
     }
 
     // the amount must be greater than zero
@@ -94,29 +93,24 @@ pub fn create_position(
         return Err(StdError::generic_err("wrong amount: must be greater than zero"));
     }
 
-    POSITIONS.update(
-        deps.storage,
-        &user_addr,
-        |position| {
-            if position.is_some() {
-                return Err(StdError::generic_err("user has a vesting position"));
-            }
-            Ok(Position {
-                total,
-                vest_schedule,
-                withdrawn: Uint128::zero(),
-            })
-        },
-    )?;
+    POSITIONS.update(deps.storage, &user_addr, |position| {
+        if position.is_some() {
+            return Err(StdError::generic_err("user has a vesting position"));
+        }
+        Ok(Position {
+            total,
+            vest_schedule,
+            withdrawn: Uint128::zero(),
+        })
+    })?;
 
-    let event = Event::new("mars/vesting/position_created")
+    Ok(Response::new()
+        .add_attribute("action", "mars/vesting/position_created")
         .add_attribute("user", user_addr)
         .add_attribute("total", total)
         .add_attribute("start_time", vest_schedule.start_time.to_string())
         .add_attribute("cliff", vest_schedule.cliff.to_string())
-        .add_attribute("duration", vest_schedule.duration.to_string());
-
-    Ok(Response::new().add_event(event))
+        .add_attribute("duration", vest_schedule.duration.to_string()))
 }
 
 pub fn withdraw(deps: DepsMut, time: u64, user_addr: Addr) -> StdResult<Response> {
@@ -138,17 +132,15 @@ pub fn withdraw(deps: DepsMut, time: u64, user_addr: Addr) -> StdResult<Response
     position.withdrawn += withdrawable;
     POSITIONS.save(deps.storage, &user_addr, &position)?;
 
-    let msg = CosmosMsg::Bank(BankMsg::Send {
-        to_address: user_addr.to_string(),
-        amount: coins(withdrawable.u128(), VEST_DENOM),
-    });
-
-    let event = Event::new("mars/vesting/withdrawn")
+    Ok(Response::new()
+        .add_message(CosmosMsg::Bank(BankMsg::Send {
+            to_address: user_addr.to_string(),
+            amount: coins(withdrawable.u128(), VEST_DENOM),
+        }))
+        .add_attribute("action", "mars/vesting/withdraw")
         .add_attribute("user", user_addr)
         .add_attribute("timestamp", time.to_string())
-        .add_attribute("withdrawable", withdrawable);
-
-    Ok(Response::new().add_message(msg).add_event(event))
+        .add_attribute("withdrawable", withdrawable))
 }
 
 pub fn transfer_ownership(
@@ -163,11 +155,10 @@ pub fn transfer_ownership(
 
     OWNER.save(deps.storage, &new_owner_addr)?;
 
-    let event = Event::new("mars/vesting/ownership_transfer_proposed")
+    Ok(Response::new()
+        .add_attribute("action", "mars/vesting/transfer_ownership")
         .add_attribute("previous_owner", owner_addr)
-        .add_attribute("new_owner", new_owner_addr);
-
-    Ok(Response::new().add_event(event))
+        .add_attribute("new_owner", new_owner_addr))
 }
 
 //--------------------------------------------------------------------------------------------------

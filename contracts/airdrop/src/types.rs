@@ -9,7 +9,7 @@ pub enum MarsMsg {
     /// `depositor` is automatically filled with the current contract's address.
     FundCommunityPool {
         amount: Vec<Coin>,
-    }
+    },
 }
 
 impl CustomMsg for MarsMsg {}

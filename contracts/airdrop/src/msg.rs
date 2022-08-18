@@ -77,12 +77,7 @@ pub struct ClaimedResponse {
 
 /// Generate the message that needs to be signed by the Terra account's private key
 pub fn msg(terra_acct: &str, mars_acct: &str, amount: Uint128) -> String {
-    format!(
-        "airdrop for {} of {} umars shall be released to {}",
-        terra_acct,
-        amount,
-        mars_acct,
-    )
+    format!("airdrop for {} of {} umars shall be released to {}", terra_acct, amount, mars_acct)
 }
 
 /// Generate the leaf of the Merkle tree

@@ -30,7 +30,8 @@ pub fn compute_withdrawable(
     let vested = compute(vest_schedule);
     let unlocked = compute(unlock_schedule);
 
-    let withdrawable = min(vested, unlocked).checked_sub(withdrawn).unwrap_or_else(|_| Uint128::zero());
+    let withdrawable =
+        min(vested, unlocked).checked_sub(withdrawn).unwrap_or_else(|_| Uint128::zero());
 
     (vested, unlocked, withdrawable)
 }
