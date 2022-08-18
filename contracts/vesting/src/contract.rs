@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    coins, to_binary, Addr, BankMsg, Binary, CosmosMsg, Deps, DepsMut, Env, Event, MessageInfo,
-    Order, Response, StdError, StdResult, Uint128,
+    coins, to_binary, Addr, BankMsg, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Order,
+    Response, StdError, StdResult, Uint128,
 };
 use cw2::set_contract_version;
 use cw_storage_plus::Bound;
@@ -109,14 +109,13 @@ pub fn create_position(
         },
     )?;
 
-    let event = Event::new("mars/vesting/position_created")
+    Ok(Response::new()
+        .add_attribute("action", "mars/vesting/position_created")
         .add_attribute("user", user_addr)
         .add_attribute("total", total)
         .add_attribute("start_time", vest_schedule.start_time.to_string())
         .add_attribute("cliff", vest_schedule.cliff.to_string())
-        .add_attribute("duration", vest_schedule.duration.to_string());
-
-    Ok(Response::new().add_event(event))
+        .add_attribute("duration", vest_schedule.duration.to_string()))
 }
 
 pub fn withdraw(deps: DepsMut, time: u64, user_addr: Addr) -> StdResult<Response> {
@@ -138,17 +137,15 @@ pub fn withdraw(deps: DepsMut, time: u64, user_addr: Addr) -> StdResult<Response
     position.withdrawn += withdrawable;
     POSITIONS.save(deps.storage, &user_addr, &position)?;
 
-    let msg = CosmosMsg::Bank(BankMsg::Send {
-        to_address: user_addr.to_string(),
-        amount: coins(withdrawable.u128(), VEST_DENOM),
-    });
-
-    let event = Event::new("mars/vesting/withdrawn")
+    Ok(Response::new()
+        .add_message(CosmosMsg::Bank(BankMsg::Send {
+            to_address: user_addr.to_string(),
+            amount: coins(withdrawable.u128(), VEST_DENOM),
+        }))
+        .add_attribute("action", "mars/vesting/withdraw")
         .add_attribute("user", user_addr)
         .add_attribute("timestamp", time.to_string())
-        .add_attribute("withdrawable", withdrawable);
-
-    Ok(Response::new().add_message(msg).add_event(event))
+        .add_attribute("withdrawable", withdrawable))
 }
 
 pub fn transfer_ownership(
@@ -163,11 +160,10 @@ pub fn transfer_ownership(
 
     OWNER.save(deps.storage, &new_owner_addr)?;
 
-    let event = Event::new("mars/vesting/ownership_transfer_proposed")
+    Ok(Response::new()
+        .add_attribute("action", "mars/vesting/transfer_ownership")
         .add_attribute("previous_owner", owner_addr)
-        .add_attribute("new_owner", new_owner_addr);
-
-    Ok(Response::new().add_event(event))
+        .add_attribute("new_owner", new_owner_addr))
 }
 
 //--------------------------------------------------------------------------------------------------

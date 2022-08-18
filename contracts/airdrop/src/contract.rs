@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    coins, to_binary, Addr, BankMsg, Binary, CosmosMsg, Deps, DepsMut, Env, Event, MessageInfo,
-    Order, Response, StdError, StdResult, Uint128,
+    coins, to_binary, Addr, BankMsg, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Order,
+    Response, StdError, StdResult, Uint128,
 };
 use cw2::set_contract_version;
 use cw_storage_plus::Bound;
@@ -111,17 +111,15 @@ pub fn claim(
         return Err(StdError::generic_err("invalid proof"));
     }
 
-    let msg = CosmosMsg::Bank(BankMsg::Send {
-        to_address: mars_acct.to_string(),
-        amount: coins(amount.u128(), "umars"),
-    });
-
-    let event = Event::new("mars/airdrop/claimed")
+    Ok(Response::new()
+        .add_message(CosmosMsg::Bank(BankMsg::Send {
+            to_address: mars_acct.to_string(),
+            amount: coins(amount.u128(), "umars"),
+        }))
+        .add_attribute("action", "mars/airdrop/claim")
         .add_attribute("terra_acct", terra_acct)
         .add_attribute("mars_acct", mars_acct)
-        .add_attribute("amount", amount);
-
-    Ok(Response::new().add_message(msg).add_event(event))
+        .add_attribute("amount", amount))
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -144,13 +142,11 @@ pub fn clawback(deps: DepsMut, env: Env) -> StdResult<Response<MarsMsg>> {
         .collect::<Vec<_>>()
         .join(",");
 
-    let msg = CosmosMsg::Custom(MarsMsg::FundCommunityPool { amount });
-
-    let event = Event::new("mars/airdrop/clawed_back")
+    Ok(Response::new()
+        .add_message(CosmosMsg::Custom(MarsMsg::FundCommunityPool { amount }))
+        .add_attribute("action", "mars/airdrop/clawback")
         .add_attribute("timestamp", env.block.time.seconds().to_string())
-        .add_attribute("amount", amount_str);
-
-    Ok(Response::new().add_message(msg).add_event(event))
+        .add_attribute("amount", amount_str))
 }
 
 //--------------------------------------------------------------------------------------------------
