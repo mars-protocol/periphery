@@ -6,12 +6,12 @@ use cosmwasm_std::{
     SubMsg, Timestamp, Uint128,
 };
 
-use crate::contract::{execute, instantiate, query};
-use crate::msg::{
+use mars_vesting::contract::{execute, instantiate, query};
+use mars_vesting::msg::{
     ConfigResponse, ExecuteMsg, InstantiateMsg, PositionResponse, QueryMsg, Schedule,
     VotingPowerResponse,
 };
-use crate::state::{Position, POSITIONS};
+use mars_vesting::state::{Position, POSITIONS};
 
 fn mock_env_at_timestamp(seconds: u64) -> Env {
     let mut env = mock_env();
