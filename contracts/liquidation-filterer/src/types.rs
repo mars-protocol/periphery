@@ -1,7 +1,7 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_std::Addr;
+use cosmwasm_std::{Addr, Uint128};
 
 /// Global configuration
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
@@ -22,4 +22,6 @@ pub struct Liquidate {
     pub debt_denom: String,
     /// The address of the borrower getting liquidated
     pub user_address: String,
+    /// Amount of debt to be repayed
+    pub amount: Uint128,
 }

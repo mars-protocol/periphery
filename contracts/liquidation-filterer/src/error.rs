@@ -10,8 +10,8 @@ pub enum ContractError {
     #[error("{0}")]
     Std(#[from] StdError),
 
-    #[error("Required coin to be sent: {denom:?}")]
-    RequiredCoin {
+    #[error("Not enough {denom:?} sent")]
+    NotEnoughCoinsSent {
         denom: String,
     },
 }
