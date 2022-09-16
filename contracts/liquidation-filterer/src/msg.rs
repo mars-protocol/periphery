@@ -13,15 +13,20 @@ pub struct InstantiateMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
-    /// Set emission per second for an asset to holders of its maToken
-    LiquidateMany {
-        liquidations: Vec<Liquidate>,
-    },
-
     /// Update contract config (only callable by owner)
     UpdateConfig {
         owner: Option<String>,
         address_provider: Option<String>,
+    },
+
+    /// Liquidate many position for a user
+    LiquidateMany {
+        liquidations: Vec<Liquidate>,
+    },
+
+    /// Withdraw all coins held by the contract to the designated recipient
+    Refund {
+        recipient: String,
     },
 }
 

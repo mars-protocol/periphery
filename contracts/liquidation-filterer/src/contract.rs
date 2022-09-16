@@ -1,11 +1,13 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    attr, to_binary, Addr, Binary, Coin, CosmosMsg, Decimal, Deps, DepsMut, Env, MessageInfo,
-    Response, StdResult, WasmMsg,
+    attr, coin, to_binary, Addr, BankMsg, Binary, CosmosMsg, Decimal, Deps, DepsMut, Env,
+    MessageInfo, QuerierWrapper, Response, StdResult, WasmMsg,
 };
 use mars_outpost::address_provider::MarsContract;
 use mars_outpost::{address_provider, red_bank};
+use std::collections::HashMap;
+use std::ops::SubAssign;
 
 use mars_outpost::error::MarsError;
 use mars_outpost::helpers::option_string_to_addr;
@@ -49,16 +51,18 @@ pub fn execute(
         ExecuteMsg::UpdateConfig {
             owner,
             address_provider,
-        } => Ok(execute_update_config(deps, env, info, owner, address_provider)?),
+        } => Ok(execute_update_config(deps, info, owner, address_provider)?),
         ExecuteMsg::LiquidateMany {
             liquidations,
-        } => execute_liquidate(deps, info, liquidations),
+        } => execute_liquidate(deps, info, &env.contract.address, liquidations),
+        ExecuteMsg::Refund {
+            recipient,
+        } => execute_refund(&deps.querier, &env.contract.address, &recipient),
     }
 }
 
 fn execute_update_config(
     deps: DepsMut,
-    _env: Env,
     info: MessageInfo,
     owner: Option<String>,
     address_provider: Option<String>,
@@ -84,6 +88,7 @@ fn execute_update_config(
 fn execute_liquidate(
     deps: DepsMut,
     info: MessageInfo,
+    contract: &Addr,
     liquidations: Vec<Liquidate>,
 ) -> Result<Response, ContractError> {
     let config = CONFIG.load(deps.storage)?;
@@ -94,14 +99,12 @@ fn execute_liquidate(
         MarsContract::RedBank,
     )?;
 
+    // There shouldn't be duplicated denoms.
+    // The amount for a denom should be equal or greater than sum of all amounts from liquidate messages for the same denom.
+    let mut funds: HashMap<_, _> = info.funds.into_iter().map(|c| (c.denom, c.amount)).collect();
+
     let mut messages = vec![];
     for liquidate in liquidations {
-        let coin = info.funds.iter().find(|&c| c.denom == liquidate.debt_denom.clone()).ok_or(
-            ContractError::RequiredCoin {
-                denom: liquidate.debt_denom.clone(),
-            },
-        )?;
-
         let user_position_response =
             query_user_position(deps.as_ref(), &red_bank_addr, &liquidate.user_address)?;
 
@@ -111,17 +114,66 @@ fn execute_liquidate(
         } = user_position_response.health_status
         {
             if liq_threshold_hf < Decimal::one() {
-                let liq_msg = to_red_bank_liquidate_msg(&red_bank_addr, &liquidate, coin)?;
+                // Check if there are enough funds sent to cover all liquidations
+                match funds.get_mut(&liquidate.debt_denom) {
+                    Some(amount) if *amount >= liquidate.amount => {
+                        amount.sub_assign(liquidate.amount)
+                    }
+                    Some(_) => {
+                        return Err(ContractError::InvalidFunds {
+                            reason: format!("not enough {}", liquidate.debt_denom),
+                        })
+                    }
+                    None => {
+                        return Err(ContractError::InvalidFunds {
+                            reason: format!("missing {}", liquidate.debt_denom),
+                        })
+                    }
+                }
+
+                let liq_msg = to_red_bank_liquidate_msg(&red_bank_addr, &liquidate)?;
                 messages.push(liq_msg);
             }
         }
     }
 
+    let refund_msg = WasmMsg::Execute {
+        contract_addr: contract.to_string(),
+        msg: to_binary(&ExecuteMsg::Refund {
+            recipient: info.sender.to_string(),
+        })?,
+        funds: vec![],
+    };
+
     let response = Response::new()
         .add_attributes(vec![attr("action", "periphery/liquidation-filterer/liquidate_many")])
-        .add_messages(messages);
+        .add_messages(messages)
+        .add_message(refund_msg);
 
     Ok(response)
+}
+
+fn execute_refund(
+    querier: &QuerierWrapper,
+    contract: &Addr,
+    recipient: &str,
+) -> Result<Response, ContractError> {
+    let coins = querier.query_all_balances(contract)?;
+
+    if coins.is_empty() {
+        return Ok(Response::new());
+    }
+
+    let coins_str = coins.iter().map(|coin| coin.to_string()).collect::<Vec<_>>().join(",");
+
+    Ok(Response::new()
+        .add_message(BankMsg::Send {
+            to_address: recipient.to_string(),
+            amount: coins,
+        })
+        .add_attribute("action", "periphery/liquidation-filterer/refund")
+        .add_attribute("recipient", recipient)
+        .add_attribute("coins", coins_str))
 }
 
 fn query_user_position(
@@ -132,25 +184,21 @@ fn query_user_position(
     let res: red_bank::UserPositionResponse = deps.querier.query_wasm_smart(
         red_bank_addr,
         &red_bank::QueryMsg::UserPosition {
-            user_address: user.to_string(),
+            user: user.to_string(),
         },
     )?;
 
     Ok(res)
 }
 
-fn to_red_bank_liquidate_msg(
-    red_bank_addr: &Addr,
-    liquidate: &Liquidate,
-    coin: &Coin,
-) -> StdResult<CosmosMsg> {
+fn to_red_bank_liquidate_msg(red_bank_addr: &Addr, liquidate: &Liquidate) -> StdResult<CosmosMsg> {
     Ok(CosmosMsg::Wasm(WasmMsg::Execute {
         contract_addr: red_bank_addr.into(),
         msg: to_binary(&red_bank::ExecuteMsg::Liquidate {
             collateral_denom: liquidate.collateral_denom.clone(),
-            user_address: liquidate.user_address.clone(),
+            user: liquidate.user_address.clone(),
         })?,
-        funds: vec![coin.clone()],
+        funds: vec![coin(liquidate.amount.u128(), liquidate.debt_denom.clone())],
     }))
 }
 
