@@ -116,12 +116,17 @@ fn execute_liquidate(
             if liq_threshold_hf < Decimal::one() {
                 // Check if there are enough funds sent to cover all liquidations
                 match funds.get_mut(&liquidate.debt_denom) {
-                    Some(amount) if *amount > liquidate.amount => {
+                    Some(amount) if *amount >= liquidate.amount => {
                         amount.sub_assign(liquidate.amount)
                     }
-                    _ => {
-                        return Err(ContractError::NotEnoughCoinsSent {
-                            denom: liquidate.debt_denom.clone(),
+                    Some(_) => {
+                        return Err(ContractError::InvalidFunds {
+                            reason: format!("not enough {}", liquidate.debt_denom),
+                        })
+                    }
+                    None => {
+                        return Err(ContractError::InvalidFunds {
+                            reason: format!("missing {}", liquidate.debt_denom),
                         })
                     }
                 }
@@ -154,6 +159,10 @@ fn execute_refund(
     recipient: &str,
 ) -> Result<Response, ContractError> {
     let coins = querier.query_all_balances(contract)?;
+
+    if coins.is_empty() {
+        return Ok(Response::new());
+    }
 
     let coins_str = coins.iter().map(|coin| coin.to_string()).collect::<Vec<_>>().join(",");
 
