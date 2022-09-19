@@ -196,20 +196,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cw-utils"
-version = "0.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "414b91f3d7a619bb26c835119d7095804596a1382ddc1d184c33c1d2c17f6c5e"
-dependencies = [
- "cosmwasm-std",
- "cw2 0.14.0",
- "schemars",
- "semver",
- "serde",
- "thiserror",
-]
-
-[[package]]
 name = "cw2"
 version = "0.13.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -219,47 +205,6 @@ dependencies = [
  "cw-storage-plus 0.13.4",
  "schemars",
  "serde",
-]
-
-[[package]]
-name = "cw2"
-version = "0.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aa74c324af8e3506fd8d50759a265bead3f87402e413c840042af5d2808463d6"
-dependencies = [
- "cosmwasm-std",
- "cw-storage-plus 0.14.0",
- "schemars",
- "serde",
-]
-
-[[package]]
-name = "cw20"
-version = "0.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4f446f59c519fbac5ab8b9f6c7f8dcaa05ee761703971406b28221ea778bb737"
-dependencies = [
- "cosmwasm-std",
- "cw-utils",
- "schemars",
- "serde",
-]
-
-[[package]]
-name = "cw20-base"
-version = "0.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e39bf97c985a50f2e340833137b3f14999f58708c4ca9928cd8f87d530c4109c"
-dependencies = [
- "cosmwasm-std",
- "cw-storage-plus 0.14.0",
- "cw-utils",
- "cw2 0.14.0",
- "cw20",
- "schemars",
- "semver",
- "serde",
- "thiserror",
 ]
 
 [[package]]
@@ -463,7 +408,7 @@ dependencies = [
  "bech32",
  "cosmwasm-std",
  "cw-storage-plus 0.13.4",
- "cw2 0.13.4",
+ "cw2",
  "hex",
  "ripemd",
  "schemars",
@@ -489,8 +434,6 @@ name = "mars-outpost"
 version = "0.1.0"
 dependencies = [
  "cosmwasm-std",
- "cw20",
- "cw20-base",
  "schemars",
  "serde",
  "thiserror",
@@ -501,10 +444,7 @@ name = "mars-testing"
 version = "0.1.0"
 dependencies = [
  "cosmwasm-std",
- "cw20",
- "cw20-base",
  "mars-outpost",
- "osmo-bindings",
  "osmosis-std",
  "prost",
  "schemars",
@@ -518,7 +458,7 @@ version = "0.1.0"
 dependencies = [
  "cosmwasm-std",
  "cw-storage-plus 0.13.4",
- "cw2 0.13.4",
+ "cw2",
  "schemars",
  "serde",
 ]
@@ -528,16 +468,6 @@ name = "opaque-debug"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
-
-[[package]]
-name = "osmo-bindings"
-version = "0.6.0"
-source = "git+https://github.com/osmosis-labs/bindings#d667599c59caa0fb2e5c6fc0b2c32de365d4f109"
-dependencies = [
- "cosmwasm-std",
- "schemars",
- "serde",
-]
 
 [[package]]
 name = "osmosis-std"
@@ -705,12 +635,6 @@ dependencies = [
  "subtle",
  "zeroize",
 ]
-
-[[package]]
-name = "semver"
-version = "1.0.13"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "93f6841e709003d68bb2deee8c343572bf446003ec20a583e76f7b15cebf3711"
 
 [[package]]
 name = "serde"

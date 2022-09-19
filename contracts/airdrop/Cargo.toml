@@ -2,9 +2,9 @@
 name = "mars-airdrop"
 version = "0.1.0"
 authors = ["larry <larry@delphidigital.io>"]
-edition = "2018"
+edition = "2021"
 license = "UNLICENSED"
-repository = "https://github.com/mars-protocol/hub-periphery"
+repository = "https://github.com/mars-protocol/periphery"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -22,3 +22,6 @@ ripemd = "0.1"
 schemars = "0.8.1"
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
 sha2 = "0.10"
+
+[profile.release]
+overflow-checks = true
