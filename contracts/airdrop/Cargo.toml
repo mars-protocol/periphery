@@ -13,15 +13,17 @@ crate-type = ["cdylib", "rlib"]
 backtraces = ["cosmwasm-std/backtraces"]
 
 [dependencies]
+cosmwasm-std = "1.1"
+cosmwasm-schema = "1.1"
+cw2 = "0.15"
+cw-storage-plus = "0.15"
 bech32 = "0.9"
-cosmwasm-std = "1.0"
-cw2 = "0.13"
-cw-storage-plus = "0.13"
 hex = "0.4"
 ripemd = "0.1"
-schemars = "0.8.1"
-serde = { version = "1.0.103", default-features = false, features = ["derive"] }
 sha2 = "0.10"
+
+[dev-dependencies]
+serde = { version = "1.0", default-features = false, features = ["derive"] }
 
 [profile.release]
 overflow-checks = true

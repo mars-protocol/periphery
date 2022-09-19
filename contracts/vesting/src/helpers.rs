@@ -11,10 +11,10 @@ pub fn compute_withdrawable(
     time: u64,
     total: Uint128,
     withdrawn: Uint128,
-    vest_schedule: Schedule,
-    unlock_schedule: Schedule,
+    vest_schedule: &Schedule,
+    unlock_schedule: &Schedule,
 ) -> (Uint128, Uint128, Uint128) {
-    let compute = |schedule: Schedule| {
+    let compute = |schedule: &Schedule| {
         // before the end of cliff period, no token will be vested/unlocked
         if time < schedule.start_time + schedule.cliff {
             return Uint128::zero();
@@ -40,13 +40,13 @@ pub fn compute_position_response(
     time: u64,
     user: impl Into<String>,
     position: &Position,
-    unlock_schedule: Schedule,
+    unlock_schedule: &Schedule,
 ) -> PositionResponse {
     let (vested, unlocked, withdrawable) = compute_withdrawable(
         time,
         position.total,
         position.withdrawn,
-        position.vest_schedule,
+        &position.vest_schedule,
         unlock_schedule,
     );
 
@@ -57,6 +57,6 @@ pub fn compute_position_response(
         unlocked,
         withdrawn: position.withdrawn,
         withdrawable,
-        vest_schedule: position.vest_schedule,
+        vest_schedule: position.vest_schedule.clone(),
     }
 }

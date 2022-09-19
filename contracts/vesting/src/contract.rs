@@ -99,7 +99,7 @@ pub fn create_position(
         }
         Ok(Position {
             total,
-            vest_schedule,
+            vest_schedule: vest_schedule.clone(),
             withdrawn: Uint128::zero(),
         })
     })?;
@@ -121,8 +121,8 @@ pub fn withdraw(deps: DepsMut, time: u64, user_addr: Addr) -> StdResult<Response
         time,
         position.total,
         position.withdrawn,
-        position.vest_schedule,
-        unlock_schedule,
+        &position.vest_schedule,
+        &unlock_schedule,
     );
 
     if withdrawable.is_zero() {
@@ -211,7 +211,7 @@ pub fn query_position(deps: Deps, time: u64, user_addr: Addr) -> StdResult<Posit
     let unlock_schedule = UNLOCK_SCHEDULE.load(deps.storage)?;
     let position = POSITIONS.load(deps.storage, &user_addr)?;
 
-    Ok(compute_position_response(time, user_addr, &position, unlock_schedule))
+    Ok(compute_position_response(time, user_addr, &position, &unlock_schedule))
 }
 
 pub fn query_voting_powers(
@@ -267,7 +267,7 @@ pub fn query_positions(
         .take(limit)
         .map(|res| {
             let (user_addr, position) = res?;
-            Ok(compute_position_response(time, user_addr, &position, unlock_schedule))
+            Ok(compute_position_response(time, user_addr, &position, &unlock_schedule))
         })
         .collect()
 }
