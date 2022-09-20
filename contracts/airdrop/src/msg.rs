@@ -1,15 +1,13 @@
+use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::Uint128;
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 pub struct InstantiateMsg {
     /// Root of the Merkle tree, in hex encoding; each leaf is the SHA256 hash of the string `{recipient},{amount}`
     pub merkle_root: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum ExecuteMsg {
     /// Claim an airdrop
     ///
@@ -29,35 +27,39 @@ pub enum ExecuteMsg {
     },
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum SudoMsg {
     /// Reclaim unclaimed tokens to the community pool
     Clawback {},
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
+#[derive(QueryResponses)]
 pub enum QueryMsg {
-    /// The contract's config; returns `ConfigResponse`
+    /// The contract's config
+    #[returns(ConfigResponse)]
     Config {},
-    /// The amount of tokens that an account has claimed; returns `ClaimedResponse`
+    /// The amount of tokens that an account has claimed
+    #[returns(ClaimedResponse)]
     Claimed {
         terra_acct: String,
     },
-    /// Enumerate all accounts that have claimed; returns `Vec<ClaimedResponse>`
+    /// Enumerate all accounts that have claimed
+    #[returns(Vec<ClaimedResponse>)]
     AllClaimed {
         start_after: Option<String>,
         limit: Option<u32>,
     },
-    /// Verify the validity of a signature; returns `bool`
+    /// Verify the validity of a signature
+    #[returns(bool)]
     VerifySignature {
         terra_acct_pk: String,
         mars_acct: String,
         amount: Uint128,
         signature: String,
     },
-    /// Verify a Merkle proof; returns `bool`
+    /// Verify a Merkle proof
+    #[returns(bool)]
     VerifyProof {
         terra_acct: String,
         amount: Uint128,
@@ -67,7 +69,7 @@ pub enum QueryMsg {
 
 pub type ConfigResponse = InstantiateMsg;
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 pub struct ClaimedResponse {
     /// The user's Terra account address
     pub terra_acct: String,

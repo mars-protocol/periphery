@@ -82,7 +82,7 @@ pub fn claim(
     })?;
 
     // The signature must be valid
-    let msg = msg(&terra_acct, &mars_acct.to_string(), amount);
+    let msg = msg(&terra_acct, mars_acct.as_str(), amount);
     if !verify_signature(deps.api, &msg, &terra_acct_pk, &signature)? {
         return Err(StdError::generic_err("invalid signature"));
     }

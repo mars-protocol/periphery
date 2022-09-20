@@ -1,11 +1,10 @@
+use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::Uint128;
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
 
 /// Denomination of the token to be vested
 pub const VEST_DENOM: &str = "umars";
 
-#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 pub struct Schedule {
     /// Time when vesting/unlocking starts
     pub start_time: u64,
@@ -16,7 +15,7 @@ pub struct Schedule {
     pub duration: u64,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 pub struct InstantiateMsg {
     /// The contract's owner
     pub owner: String,
@@ -24,8 +23,7 @@ pub struct InstantiateMsg {
     pub unlock_schedule: Schedule,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum ExecuteMsg {
     /// Create a new vesting position for a user
     CreatePosition {
@@ -38,31 +36,36 @@ pub enum ExecuteMsg {
     TransferOwnership(String),
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
+#[derive(QueryResponses)]
 pub enum QueryMsg {
-    /// The contract's configurations; returns `ConfigResponse`
+    /// The contract's configurations
+    #[returns(ConfigResponse)]
     Config {},
-    /// Amount of MARS tokens of a vesting recipient current locked in the contract; returns `VotingPowerResponse`
+    /// Amount of MARS tokens of a vesting recipient current locked in the contract
+    #[returns(VotingPowerResponse)]
     VotingPower {
         user: String,
     },
-    /// Enumerate all vesting recipients and return their current voting power; returns `Vec<VotingPowerResponse>`
+    /// Enumerate all vesting recipients and return their current voting power
+    #[returns(Vec<VotingPowerResponse>)]
     VotingPowers {
         start_after: Option<String>,
         limit: Option<u32>,
     },
-    /// Details of a recipient's vesting position; returns `PositionResponse`
+    /// Details of a recipient's vesting position
     ///
     /// NOTE: This query depends on block time, therefore it may not work with time travel queries.
     /// In such cases, use WASM raw query instead.
+    #[returns(PositionResponse)]
     Position {
         user: String,
     },
-    /// Enumerate all vesting positions; returns `Vec<PositionResponse>`
+    /// Enumerate all vesting positions
     ///
     /// NOTE: This query depends on block time, therefore it may not work with time travel queries.
     /// In such cases, use WASM raw query instead.
+    #[returns(Vec<PositionResponse>)]
     Positions {
         start_after: Option<String>,
         limit: Option<u32>,
@@ -71,7 +74,7 @@ pub enum QueryMsg {
 
 pub type ConfigResponse = InstantiateMsg;
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 pub struct VotingPowerResponse {
     /// Address of the user
     pub user: String,
@@ -79,7 +82,7 @@ pub struct VotingPowerResponse {
     pub voting_power: Uint128,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 pub struct PositionResponse {
     /// Address of the user
     pub user: String,
