@@ -452,6 +452,7 @@ version = "0.1.0"
 dependencies = [
  "cosmwasm-std",
  "cw-storage-plus 0.14.0",
+ "cw2",
  "mars-outpost",
  "mars-testing",
  "schemars",
