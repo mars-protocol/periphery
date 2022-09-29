@@ -13,8 +13,7 @@ mod helpers;
 // We are only interested in health status, the rest can have random values
 fn dummy_user_position(health_status: UserHealthStatus) -> UserPositionResponse {
     UserPositionResponse {
-        total_collateral_value: Default::default(),
-        total_debt_value: Default::default(),
+        total_enabled_collateral: Default::default(),
         total_collateralized_debt: Default::default(),
         weighted_max_ltv_collateral: Default::default(),
         weighted_liquidation_threshold_collateral: Default::default(),
