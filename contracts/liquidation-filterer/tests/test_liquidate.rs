@@ -1,5 +1,6 @@
-use cosmwasm_std::testing::{mock_env, mock_info};
+use cosmwasm_std::testing::{mock_env, mock_info, MOCK_CONTRACT_ADDR};
 use cosmwasm_std::{coin, to_binary, BankMsg, CosmosMsg, SubMsg, Uint128, WasmMsg};
+use mars_outpost::error::MarsError;
 
 use crate::helpers::{setup_test, setup_test_with_balance};
 use mars_liquidation_filterer::contract::execute;
@@ -172,7 +173,7 @@ fn test_liquidate_many_accounts() {
 fn test_refund_if_no_coins() {
     let mut deps = setup_test();
 
-    let info = mock_info("contract", &[]);
+    let info = mock_info("owner", &[]);
     let msg = ExecuteMsg::Refund {
         recipient: "bot".to_string(),
     };
@@ -181,10 +182,22 @@ fn test_refund_if_no_coins() {
 }
 
 #[test]
+fn test_refund_if_unauthorized() {
+    let mut deps = setup_test_with_balance(&[coin(1234u128, "uosmo"), coin(2345u128, "umars")]);
+
+    let info = mock_info("somebody", &[]);
+    let msg = ExecuteMsg::Refund {
+        recipient: "bot".to_string(),
+    };
+    let error_res = execute(deps.as_mut(), mock_env(), info, msg).unwrap_err();
+    assert_eq!(error_res, ContractError::Mars(MarsError::Unauthorized {}));
+}
+
+#[test]
 fn test_refund() {
     let mut deps = setup_test_with_balance(&[coin(1234u128, "uosmo"), coin(2345u128, "umars")]);
 
-    let info = mock_info("contract", &[]);
+    let info = mock_info(MOCK_CONTRACT_ADDR, &[]);
     let msg = ExecuteMsg::Refund {
         recipient: "bot".to_string(),
     };

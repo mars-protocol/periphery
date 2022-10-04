@@ -2,7 +2,7 @@
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     attr, coin, to_binary, Addr, BankMsg, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
-    QuerierWrapper, Reply, Response, StdResult, SubMsg, WasmMsg,
+    Reply, Response, StdResult, SubMsg, WasmMsg,
 };
 use mars_outpost::address_provider::MarsContract;
 use mars_outpost::{address_provider, red_bank};
@@ -60,7 +60,7 @@ pub fn execute(
         } => execute_liquidate(deps, info, &env.contract.address, liquidations),
         ExecuteMsg::Refund {
             recipient,
-        } => execute_refund(&deps.querier, &env.contract.address, &recipient),
+        } => execute_refund(deps.as_ref(), &info.sender, &env.contract.address, &recipient),
     }
 }
 
@@ -150,11 +150,19 @@ fn execute_liquidate(
 }
 
 fn execute_refund(
-    querier: &QuerierWrapper,
+    deps: Deps,
+    sender: &Addr,
     contract: &Addr,
     recipient: &str,
 ) -> Result<Response, ContractError> {
-    let coins = querier.query_all_balances(contract)?;
+    let config = CONFIG.load(deps.storage)?;
+
+    // Only owner or contract itself (contract calls refund at the end of liquidation process) can withdraw funds
+    if !(sender == &config.owner || sender == contract) {
+        return Err(MarsError::Unauthorized {}.into());
+    };
+
+    let coins = deps.querier.query_all_balances(contract)?;
 
     if coins.is_empty() {
         return Ok(Response::new());
