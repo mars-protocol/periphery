@@ -461,12 +461,21 @@ dependencies = [
 ]
 
 [[package]]
-name = "mars-outpost"
+name = "mars-osmosis"
 version = "0.1.0"
 dependencies = [
  "cosmwasm-std",
- "schemars",
+ "mars-outpost",
+ "osmosis-std",
  "serde",
+]
+
+[[package]]
+name = "mars-outpost"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
  "thiserror",
 ]
 
@@ -475,6 +484,7 @@ name = "mars-testing"
 version = "0.1.0"
 dependencies = [
  "cosmwasm-std",
+ "mars-osmosis",
  "mars-outpost",
  "osmosis-std",
  "prost",
