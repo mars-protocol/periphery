@@ -30,6 +30,10 @@ pub enum ExecuteMsg {
         user: String,
         vest_schedule: Schedule,
     },
+    /// Terminate a vesting position, collect all unvested tokens
+    TerminatePosition {
+        user: String,
+    },
     /// Withdraw vested and unlocked MARS tokens
     Withdraw {},
     /// Transfer the contract's ownership to another account
