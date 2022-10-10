@@ -1,5 +1,6 @@
 [workspace]
-members = ["contracts/*"]
+members = ["contracts/*", "packages/*"]
+exclude = ["contracts/liquidation-filterer"]
 
 [profile.release]
 rpath = false

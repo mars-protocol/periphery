@@ -7,12 +7,13 @@ use cosmwasm_std::{
 use cw2::set_contract_version;
 use cw_storage_plus::Bound;
 
+use mars_types::MarsMsg;
+
 use crate::crypto::{pubkey_to_addr, verify_proof, verify_signature};
 use crate::msg::{
     leaf, msg, ClaimedResponse, ConfigResponse, ExecuteMsg, InstantiateMsg, QueryMsg, SudoMsg,
 };
 use crate::state::{CLAIMED, ROOT};
-use crate::types::MarsMsg;
 
 const CONTRACT_NAME: &str = "crates.io:mars-airdrop";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");

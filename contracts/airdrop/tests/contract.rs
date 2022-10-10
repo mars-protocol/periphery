@@ -6,10 +6,11 @@ use cosmwasm_std::{
     Timestamp, Uint128,
 };
 
+use mars_types::MarsMsg;
+
 use mars_airdrop::contract::{execute, instantiate, query, sudo};
 use mars_airdrop::msg::{ClaimedResponse, ExecuteMsg, InstantiateMsg, QueryMsg, SudoMsg};
 use mars_airdrop::state::CLAIMED;
-use mars_airdrop::types::MarsMsg;
 
 const MOCK_MERKLE_ROOT: &str = "a7da979c32f9ffeca6214558c560780cf06b09e52fe670f16c532b20016d7f38";
 
