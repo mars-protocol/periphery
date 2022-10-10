@@ -164,6 +164,92 @@ fn creating_positions() {
 }
 
 #[test]
+fn terminating_positions() {
+    let mut deps = setup_test();
+
+    execute(
+        deps.as_mut(),
+        mock_env(),
+        mock_info("owner", &[coin(12345, "umars")]),
+        ExecuteMsg::CreatePosition {
+            user: "larry".to_string(),
+            vest_schedule: Schedule {
+                start_time: 1614600000, // 2021-03-01
+                cliff: 31536000,        // 1 year
+                duration: 126144000,    // 4 years
+            },
+        },
+    )
+    .unwrap();
+
+    // for this test, we simulate the most general case
+    // the user first makes a withdrawal
+    // 2022-10-01
+    // vested:       12345 * (1664625600 - 1614600000) / 126144000 = 4895
+    // unlocked:     12345 * (1664625600 - 1662033600) / 63072000  = 507
+    // withdrawable: min(4895, 507) - 0 = 507
+    execute(
+        deps.as_mut(),
+        mock_env_at_timestamp(1664625600),
+        mock_info("larry", &[]),
+        ExecuteMsg::Withdraw {},
+    )
+    .unwrap();
+
+    // 2023-10-01
+    // vested:       12345 * (1696161600 - 1614600000) / 126144000 = 7981
+    // unlocked:     12345 * (1696161600 - 1662033600) / 63072000  = 6679
+    // withdrawable: min(7981, 6679) - 507 = 6172
+    let env = mock_env_at_timestamp(1696161600);
+
+    let msg = ExecuteMsg::TerminatePosition {
+        user: "larry".to_string(),
+    };
+
+    // non-owner can't terminate allocation
+    let err =
+        execute(deps.as_mut(), env.clone(), mock_info("non_owner", &[]), msg.clone()).unwrap_err();
+    assert_eq!(err, StdError::generic_err("only owner can terminate allocations"));
+
+    // owner properly terminates position
+    let res = execute(deps.as_mut(), env.clone(), mock_info("owner", &[]), msg).unwrap();
+    assert_eq!(res.messages.len(), 1);
+    assert_eq!(
+        res.messages[0],
+        SubMsg::new(BankMsg::Send {
+            to_address: "owner".to_string(),
+            amount: coins(4364, "umars"), // 12345 - 7981
+        })
+    );
+
+    // the position should have been updated
+    let position = POSITIONS.load(deps.as_ref().storage, &Addr::unchecked("larry")).unwrap();
+    assert_eq!(
+        position,
+        Position {
+            total: Uint128::new(7981),
+            withdrawn: Uint128::new(507),
+            vest_schedule: Schedule {
+                start_time: 1614600000,
+                cliff: 31536000,
+                duration: 81561600
+            }
+        },
+    );
+
+    // voting power should be correct
+    // total - withdrawn = 7981 - 507 = 7474
+    let vpr: VotingPowerResponse = query_helper(
+        deps.as_ref(),
+        mock_env_at_timestamp(1696161600),
+        QueryMsg::VotingPower {
+            user: "larry".to_string(),
+        },
+    );
+    assert_eq!(vpr.voting_power, Uint128::new(7474));
+}
+
+#[test]
 fn withdrawing() {
     let mut deps = setup_test();
 

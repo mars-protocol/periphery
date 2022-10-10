@@ -51,6 +51,9 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
             user,
             vest_schedule,
         } => create_position(deps, info, api.addr_validate(&user)?, vest_schedule),
+        ExecuteMsg::TerminatePosition {
+            user,
+        } => terminate_position(deps, env, info, api.addr_validate(&user)?),
         ExecuteMsg::Withdraw {} => withdraw(deps, env.block.time.seconds(), info.sender),
         ExecuteMsg::TransferOwnership(new_owner) => {
             transfer_ownership(deps, info.sender, api.addr_validate(&new_owner)?)
@@ -111,6 +114,50 @@ pub fn create_position(
         .add_attribute("start_time", vest_schedule.start_time.to_string())
         .add_attribute("cliff", vest_schedule.cliff.to_string())
         .add_attribute("duration", vest_schedule.duration.to_string()))
+}
+
+pub fn terminate_position(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    user_addr: Addr,
+) -> StdResult<Response> {
+    let current_time = env.block.time.seconds();
+
+    // only owner can terminate allocations
+    let owner_addr = OWNER.load(deps.storage)?;
+    if info.sender != owner_addr {
+        return Err(StdError::generic_err("only owner can terminate allocations"));
+    }
+
+    let unlock_schedule = UNLOCK_SCHEDULE.load(deps.storage)?;
+    let mut position = POSITIONS.load(deps.storage, &user_addr)?;
+
+    let (vested, _, _) = compute_withdrawable(
+        current_time,
+        position.total,
+        position.withdrawn,
+        &position.vest_schedule,
+        &unlock_schedule,
+    );
+
+    // unvested tokens are to be reclaimed by the owner
+    let reclaim = position.total - vested;
+
+    // set position total amount to be the vested amount so far, and vesting end time to now
+    position.total = vested;
+    position.vest_schedule.duration = current_time - position.vest_schedule.start_time;
+    POSITIONS.save(deps.storage, &user_addr, &position)?;
+
+    Ok(Response::new()
+        .add_message(CosmosMsg::Bank(BankMsg::Send {
+            to_address: owner_addr.into(),
+            amount: coins(reclaim.u128(), VEST_DENOM),
+        }))
+        .add_attribute("action", "mars/vesting/terminate_position")
+        .add_attribute("user", user_addr)
+        .add_attribute("vested", vested)
+        .add_attribute("relaimed", reclaim))
 }
 
 pub fn withdraw(deps: DepsMut, time: u64, user_addr: Addr) -> StdResult<Response> {
