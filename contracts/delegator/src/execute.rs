@@ -55,11 +55,11 @@ pub fn refund(deps: DepsMut, env: Env) -> Result<Response<MarsMsg>, ContractErro
 
 /// Query the validator set, and generate messages to delegate evenly to each validator.
 ///
-/// Need to handle the cast where the coin balance is not divisible by the number of validators.
+/// Need to handle the case where the coin balance is not divisible by the number of validators.
 /// For this we use the same algorithm from Steak:
 /// https://github.com/steak-enjoyers/steak/blob/v2.0.0-rc0/contracts/hub/src/math.rs#L52-L90
 ///
-/// NOTE: We don't handle the case where the number of validators is zero, because it's impossible.
+/// We don't handle the case where the number of validators is zero, because it's impossible.
 pub fn get_delegation_msgs(querier: &QuerierWrapper, tokens: u128) -> StdResult<Vec<StakingMsg>> {
     let validators = querier.query_all_validators()?;
     let num_validators = validators.len() as u128;
