@@ -4,7 +4,7 @@ use cosmwasm_std::{
     attr, coin, to_binary, Addr, BankMsg, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
     Reply, Response, StdResult, SubMsg, WasmMsg,
 };
-use mars_outpost::address_provider::MarsContract;
+use mars_outpost::address_provider::MarsAddressType;
 use mars_outpost::{address_provider, red_bank};
 use std::collections::HashMap;
 use std::ops::SubAssign;
@@ -99,7 +99,7 @@ fn execute_liquidate(
     let red_bank_addr = address_provider::helpers::query_address(
         deps.as_ref(),
         &config.address_provider,
-        MarsContract::RedBank,
+        MarsAddressType::RedBank,
     )?;
 
     // There shouldn't be duplicated denoms.
