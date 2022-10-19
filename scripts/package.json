@@ -1,10 +1,19 @@
 {
+  "scripts": {
+    "deploy:osmosis": "yarn build && node build/deploy/osmosis/index.js",
+    "generate-types": "yarn rust-schema && tsc --project codegen-tsconfig.json && rm -rf types/generated && node build/codegen && node build/codegen/insertIgnores.js",
+    "rust-schema": "cd ../ && cargo make generate-all-schemas && cd scripts",
+    "compile": "./build_artifacts.sh",
+    "build": "tsc"
+  },
   "dependencies": {
+    "@cosmwasm/ts-codegen": "^0.19.0",
     "bech32": "^2.0.0",
     "bip32": "^2.0.6",
     "bip39": "^3.0.4",
     "jscrypto": "^1.0.3",
     "merkletreejs": "^0.2.32",
+    "prepend-file": "^2.0.1",
     "secp256k1": "^4.0.3",
     "ts-node": "^10.8.1"
   },
