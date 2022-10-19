@@ -15,8 +15,8 @@ pub fn init(deps: DepsMut, info: MessageInfo, ending_time: u64) -> Result<Respon
     // The deployer must make sure to provide a valid value.
     ENDING_TIME.save(deps.storage, &ending_time)?;
 
-    let tokens = must_pay(&info, BOND_DENOM)?;
-    let msgs = get_delegation_msgs(&deps.querier, tokens.u128())?;
+    let amount = must_pay(&info, BOND_DENOM)?;
+    let msgs = get_delegation_msgs(&deps.querier, amount.u128())?;
 
     Ok(Response::new().add_messages(msgs))
 }
