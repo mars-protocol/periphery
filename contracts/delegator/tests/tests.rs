@@ -2,13 +2,12 @@ use cosmwasm_std::testing::{
     mock_dependencies, mock_env, mock_info, MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR,
 };
 use cosmwasm_std::{
-    coin, coins, Addr, Decimal, Empty, Env, FullDelegation, OwnedDeps, StakingMsg, SubMsg,
-    Timestamp, Validator,
+    coin, coins, from_binary, Addr, Decimal, Empty, Env, FullDelegation, OwnedDeps, StakingMsg,
+    SubMsg, Timestamp, Validator,
 };
 
-use mars_delegator::contract::{execute, instantiate, sudo};
-use mars_delegator::msg::{Config, ExecuteMsg, InstantiateMsg, SudoMsg};
-use mars_delegator::state::CONFIG;
+use mars_delegator::contract::{execute, instantiate, query, sudo};
+use mars_delegator::msg::{Config, ExecuteMsg, InstantiateMsg, QueryMsg, SudoMsg};
 use mars_types::MarsMsg;
 
 pub const BOND_DENOM: &str = "umars";
@@ -121,7 +120,8 @@ fn instantiating() {
         ]
     );
 
-    let cfg = CONFIG.load(deps.as_ref().storage).unwrap();
+    let cfg_bytes = query(deps.as_ref(), mock_env(), QueryMsg::Config {}).unwrap();
+    let cfg: Config = from_binary(&cfg_bytes).unwrap();
     assert_eq!(
         cfg,
         Config {
