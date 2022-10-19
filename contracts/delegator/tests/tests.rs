@@ -7,6 +7,7 @@ use cosmwasm_std::{
 };
 
 use mars_delegator::contract::{execute, instantiate, query, sudo};
+use mars_delegator::error::ContractError;
 use mars_delegator::msg::{Config, ExecuteMsg, InstantiateMsg, QueryMsg, SudoMsg};
 use mars_types::MarsMsg;
 
@@ -68,9 +69,6 @@ fn setup_test() -> OwnedDeps<MockStorage, MockApi, MockQuerier, Empty> {
             },
         ],
     );
-
-    // give the contract some coin balance. this is for testing refunding
-    deps.querier.update_balance(MOCK_CONTRACT_ADDR, coins(10000, BOND_DENOM));
 
     // instantiate the contract
     instantiate(
@@ -161,15 +159,14 @@ fn unbonding() {
 
     // cannot unbond before the ending time is reached
     {
-        let _err = execute(
+        let err = execute(
             deps.as_mut(),
             mock_env_at_timestamp(9999),
             mock_info("larry", &[]),
             ExecuteMsg::Unbond {},
         )
         .unwrap_err();
-        // I would like to assert the correct error, but Rust won't let me:
-        // binary operation `==` cannot be applied to type `ContractError`
+        assert_eq!(err, ContractError::ending_time_not_reached(10000, 9999));
     }
 
     // can unbond after ending time is reached
@@ -205,7 +202,11 @@ fn unbonding() {
 fn refunding() {
     let mut deps = setup_test();
 
+    // give the contract some coin balance to be refunded
+    deps.querier.update_balance(MOCK_CONTRACT_ADDR, coins(10000, BOND_DENOM));
+
     {
+        deps.querier.update_balance(MOCK_CONTRACT_ADDR, coins(10000, BOND_DENOM));
         let res =
             execute(deps.as_mut(), mock_env(), mock_info("larry", &[]), ExecuteMsg::Refund {})
                 .unwrap();
@@ -221,10 +222,9 @@ fn refunding() {
     {
         deps.querier.update_balance(MOCK_CONTRACT_ADDR, vec![]);
 
-        let _err =
+        let err =
             execute(deps.as_mut(), mock_env(), mock_info("larry", &[]), ExecuteMsg::Refund {})
                 .unwrap_err();
-        // I would like to assert the correct error, but Rust won't let me:
-        // binary operation `==` cannot be applied to type `ContractError`
+        assert_eq!(err, ContractError::NothingToRefund);
     }
 }

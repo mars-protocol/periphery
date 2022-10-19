@@ -1,0 +1,140 @@
+[
+  {
+    "address": "terra1x46rqay4d3cssq8gxxvqz8xt6nwlz4td20k38v",
+    "amount": 12345,
+    "merkle_proof": [
+      "d9c2312817b69e2962f9c6372d62aa8ff0e711c0bdafc3bb3f97220d345d68a0",
+      "2d6a42b4e9d4d3e1cc52c33d6d3aa202aa4543f7c6f019f49215641b609f4c6b",
+      "8f158a52091d5de3694d52065e274693ebced19b0e958d380160222346d0b2f1",
+      "7cd7ebed17633eb40a4680c268e5fc8da1c0fdf045444ccdc70cf29df6aec012"
+    ]
+  },
+  {
+    "address": "terra17lmam6zguazs5q5u6z5mmx76uj63gldnse2pdp",
+    "amount": 23456,
+    "merkle_proof": [
+      "79b5e343b5d5f3086803a8cff7def67b70f2edee1c6046101952ed9a0b632b00",
+      "2d6a42b4e9d4d3e1cc52c33d6d3aa202aa4543f7c6f019f49215641b609f4c6b",
+      "8f158a52091d5de3694d52065e274693ebced19b0e958d380160222346d0b2f1",
+      "7cd7ebed17633eb40a4680c268e5fc8da1c0fdf045444ccdc70cf29df6aec012"
+    ]
+  },
+  {
+    "address": "terra1757tkx08n0cqrw7p86ny9lnxsqeth0wgp0em95",
+    "amount": 42069,
+    "merkle_proof": [
+      "43e1c4776372ff2136f9f8db4f2c9e8392ebd9c378bf47eeba18871309c453d7",
+      "37c71107165d3dc28551f006263453fa642d78fc013c04d2d89d96de022fde24",
+      "8f158a52091d5de3694d52065e274693ebced19b0e958d380160222346d0b2f1",
+      "7cd7ebed17633eb40a4680c268e5fc8da1c0fdf045444ccdc70cf29df6aec012"
+    ]
+  },
+  {
+    "address": "terra199vw7724lzkwz6lf2hsx04lrxfkz09tg8dlp6r",
+    "amount": 88888,
+    "merkle_proof": [
+      "32c8c9f18cab2b1cce8b2f8a5bd58d88322bc8e155d0f9c20f0414a46c390994",
+      "37c71107165d3dc28551f006263453fa642d78fc013c04d2d89d96de022fde24",
+      "8f158a52091d5de3694d52065e274693ebced19b0e958d380160222346d0b2f1",
+      "7cd7ebed17633eb40a4680c268e5fc8da1c0fdf045444ccdc70cf29df6aec012"
+    ]
+  },
+  {
+    "address": "terra18wlvftxzj6zt0xugy2lr9nxzu402690ltaf4ss",
+    "amount": 987654321,
+    "merkle_proof": [
+      "5a2717e864026c224146f9bfcd2a5877e217549cf3f92757b257477b7fc57941",
+      "89968e65863aa5c313580156455876263e96dafb40b2fa330852cee5c5a766f9",
+      "f7bf801c4c65dd5cf5f53478f77d42fbb529148e4c4d89b138a41022ee62697f",
+      "7cd7ebed17633eb40a4680c268e5fc8da1c0fdf045444ccdc70cf29df6aec012"
+    ]
+  },
+  {
+    "address": "terra1e8ryd9ezefuucd4mje33zdms9m2s90m57878v9",
+    "amount": 999999999,
+    "merkle_proof": [
+      "0ad688539a9ae757ee1f48e191239c710609e02510ed4dc5cd1eca450f6bd709",
+      "89968e65863aa5c313580156455876263e96dafb40b2fa330852cee5c5a766f9",
+      "f7bf801c4c65dd5cf5f53478f77d42fbb529148e4c4d89b138a41022ee62697f",
+      "7cd7ebed17633eb40a4680c268e5fc8da1c0fdf045444ccdc70cf29df6aec012"
+    ]
+  },
+  {
+    "address": "terra17tv2hvwpg0ukqgd2y5ct2w54fyan7z0zxrm2f9",
+    "amount": 4237784,
+    "merkle_proof": [
+      "967212338c82b326627dbd3fab19267b12cadbd75f327a7448acbf8c3b735911",
+      "7089ea1db485169381b9e3539e5c61e3818b53c03a34f8f2aeecf35a3e112c3a",
+      "f7bf801c4c65dd5cf5f53478f77d42fbb529148e4c4d89b138a41022ee62697f",
+      "7cd7ebed17633eb40a4680c268e5fc8da1c0fdf045444ccdc70cf29df6aec012"
+    ]
+  },
+  {
+    "address": "terra1lkccuqgj6sjwjn8gsa9xlklqv4pmrqg9dx2fxc",
+    "amount": 7324894,
+    "merkle_proof": [
+      "3d5ceea40321a0e83b519c240942c859dd875fe82c071d3cb2f7659124c5116b",
+      "7089ea1db485169381b9e3539e5c61e3818b53c03a34f8f2aeecf35a3e112c3a",
+      "f7bf801c4c65dd5cf5f53478f77d42fbb529148e4c4d89b138a41022ee62697f",
+      "7cd7ebed17633eb40a4680c268e5fc8da1c0fdf045444ccdc70cf29df6aec012"
+    ]
+  },
+  {
+    "address": "terra1333veey879eeqcff8j3gfcgwt8cfrg9mq20v6f",
+    "amount": 42873,
+    "merkle_proof": [
+      "c5e64f154c670df4e47e1891659dd5ce0950967365022c738b30c34c448e34f5",
+      "368f3187a5e56b29c3f230b1e9aca54882e857bb7d552c96299237a661b0b64e",
+      "5de66ae8b80805924f27555736dbe202571d088bda9b6f2ba2102b6d3590c066",
+      "8d984b8d88c5f2a4adc4e45d3fae0a4ec996b9c477afed3e42b78a9929e45644"
+    ]
+  },
+  {
+    "address": "terra1fmcjjt6yc9wqup2r06urnrd928jhrde6gcld6n",
+    "amount": 74328473,
+    "merkle_proof": [
+      "38628deaeb75766381108fec716bf56a50a912eea8cd3022a610c2e18b708de9",
+      "368f3187a5e56b29c3f230b1e9aca54882e857bb7d552c96299237a661b0b64e",
+      "5de66ae8b80805924f27555736dbe202571d088bda9b6f2ba2102b6d3590c066",
+      "8d984b8d88c5f2a4adc4e45d3fae0a4ec996b9c477afed3e42b78a9929e45644"
+    ]
+  },
+  {
+    "address": "terra1u48kjlf2n0s77v0yhkmle58rdqgrqmdam0cv56",
+    "amount": 723443,
+    "merkle_proof": [
+      "b2b1fec4bc3d45834b59724edce5589bb9d652576307bb667c8e2f3f3ffa2731",
+      "d1fbc1a5c082d7b5ddf0a846af96e789f727662cf001bcb3f071869915eb4440",
+      "5de66ae8b80805924f27555736dbe202571d088bda9b6f2ba2102b6d3590c066",
+      "8d984b8d88c5f2a4adc4e45d3fae0a4ec996b9c477afed3e42b78a9929e45644"
+    ]
+  },
+  {
+    "address": "terra1sspv8dyfg2p4phxu29k28zm3t3kmx7x5ljw9ae",
+    "amount": 42743987,
+    "merkle_proof": [
+      "ec601de360c76a5ead30a9e662c8f9518f95f5d6e882d5e53bdb409d076148c7",
+      "d1fbc1a5c082d7b5ddf0a846af96e789f727662cf001bcb3f071869915eb4440",
+      "5de66ae8b80805924f27555736dbe202571d088bda9b6f2ba2102b6d3590c066",
+      "8d984b8d88c5f2a4adc4e45d3fae0a4ec996b9c477afed3e42b78a9929e45644"
+    ]
+  },
+  {
+    "address": "terra1wdqnf2ktzcqdnm5sl20hnwrzzlfv5mswmfn52r",
+    "amount": 723943,
+    "merkle_proof": [
+      "c0eacfbf6d03aefd74c191d0b98cdbf9903d1680a48020c377a79635d44a52bf",
+      "bdf2e9551d75103bca6bb3d0d2eccf79bc1d715be4450a171aa7e3fa5c5fd0be",
+      "8d984b8d88c5f2a4adc4e45d3fae0a4ec996b9c477afed3e42b78a9929e45644"
+    ]
+  },
+  {
+    "address": "mars1z926ax906k0ycsuckele6x5hh66e2m4m09whw6",
+    "amount": 88888888,
+    "merkle_proof": [
+      "297ab99615b5f3a1de13943e78b588b0c276499cda70691f4f6608ab9c291dea",
+      "bdf2e9551d75103bca6bb3d0d2eccf79bc1d715be4450a171aa7e3fa5c5fd0be",
+      "8d984b8d88c5f2a4adc4e45d3fae0a4ec996b9c477afed3e42b78a9929e45644"
+    ]
+  }
+]
