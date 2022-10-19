@@ -23,7 +23,9 @@ pub fn init(deps: DepsMut, info: MessageInfo, cfg: Config) -> Result<Response, C
 
 pub fn force_unbond(deps: DepsMut, env: Env) -> StdResult<Response<MarsMsg>> {
     let msgs = get_undelegate_msgs(&deps.querier, &env.contract.address)?;
-    Ok(Response::new().add_messages(msgs).add_attribute("action", "mars/delegator/force_unbond"))
+    Ok(Response::new()
+        .add_messages(msgs)
+        .add_attribute("action", "periphery/delegator/force_unbond"))
 }
 
 pub fn unbond(deps: DepsMut, env: Env) -> Result<Response<MarsMsg>, ContractError> {
@@ -36,7 +38,7 @@ pub fn unbond(deps: DepsMut, env: Env) -> Result<Response<MarsMsg>, ContractErro
 
     let msgs = get_undelegate_msgs(&deps.querier, &env.contract.address)?;
 
-    Ok(Response::new().add_messages(msgs).add_attribute("action", "mars/delegator/unbond"))
+    Ok(Response::new().add_messages(msgs).add_attribute("action", "periphery/delegator/unbond"))
 }
 
 pub fn refund(deps: DepsMut, env: Env) -> Result<Response<MarsMsg>, ContractError> {
@@ -50,7 +52,7 @@ pub fn refund(deps: DepsMut, env: Env) -> Result<Response<MarsMsg>, ContractErro
         .add_message(MarsMsg::FundCommunityPool {
             amount,
         })
-        .add_attribute("action", "mars/delegator/refund"))
+        .add_attribute("action", "periphery/delegator/refund"))
 }
 
 /// Query the validator set, and generate messages to delegate evenly to each validator.
