@@ -7,9 +7,11 @@ use cosmwasm_std::{
 };
 
 use mars_delegator::contract::{execute, instantiate, sudo};
-use mars_delegator::msg::{ExecuteMsg, InstantiateMsg, SudoMsg, BOND_DENOM};
-use mars_delegator::state::ENDING_TIME;
+use mars_delegator::msg::{Config, ExecuteMsg, InstantiateMsg, SudoMsg};
+use mars_delegator::state::CONFIG;
 use mars_types::MarsMsg;
+
+pub const BOND_DENOM: &str = "umars";
 
 fn mock_env_at_timestamp(timestamp: u64) -> Env {
     let mut env = mock_env();
@@ -22,7 +24,7 @@ fn setup_test() -> OwnedDeps<MockStorage, MockApi, MockQuerier, Empty> {
 
     // initialize a mock validator set with three validators
     deps.querier.update_staking(
-        BOND_DENOM,
+        "umars",
         &[
             Validator {
                 address: "larry".into(),
@@ -77,6 +79,7 @@ fn setup_test() -> OwnedDeps<MockStorage, MockApi, MockQuerier, Empty> {
         mock_env(),
         mock_info("deployer", &coins(10000, BOND_DENOM)),
         InstantiateMsg {
+            bond_denom: BOND_DENOM.into(),
             ending_time: 10000,
         },
     )
@@ -94,6 +97,7 @@ fn instantiating() {
         mock_env(),
         mock_info("deployer", &coins(10000, BOND_DENOM)),
         InstantiateMsg {
+            bond_denom: BOND_DENOM.into(),
             ending_time: 10000,
         },
     )
@@ -117,8 +121,14 @@ fn instantiating() {
         ]
     );
 
-    let ending_time = ENDING_TIME.load(deps.as_ref().storage).unwrap();
-    assert_eq!(ending_time, 10000);
+    let cfg = CONFIG.load(deps.as_ref().storage).unwrap();
+    assert_eq!(
+        cfg,
+        Config {
+            bond_denom: "umars".into(),
+            ending_time: 10000,
+        },
+    );
 }
 
 #[test]

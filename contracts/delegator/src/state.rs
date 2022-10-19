@@ -1,3 +1,5 @@
 use cw_storage_plus::Item;
 
-pub const ENDING_TIME: Item<u64> = Item::new("ending_time");
+use crate::msg::Config;
+
+pub const CONFIG: Item<Config> = Item::new("config");

@@ -19,7 +19,7 @@ pub fn instantiate(
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     cw2::set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
-    execute::init(deps, info, msg.ending_time)
+    execute::init(deps, info, msg)
 }
 
 #[entry_point]
@@ -45,6 +45,6 @@ pub fn execute(
 #[entry_point]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::EndingTime {} => to_binary(&query::query_ending_time(deps)?),
+        QueryMsg::Config {} => to_binary(&query::query_config(deps)?),
     }
 }

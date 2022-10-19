@@ -7,16 +7,16 @@ use cw_utils::must_pay;
 use mars_types::MarsMsg;
 
 use crate::error::ContractError;
-use crate::msg::BOND_DENOM;
-use crate::state::ENDING_TIME;
+use crate::msg::Config;
+use crate::state::CONFIG;
 
-pub fn init(deps: DepsMut, info: MessageInfo, ending_time: u64) -> Result<Response, ContractError> {
+pub fn init(deps: DepsMut, info: MessageInfo, cfg: Config) -> Result<Response, ContractError> {
     // We don't implement a validity check of the ending time.
     // The deployer must make sure to provide a valid value.
-    ENDING_TIME.save(deps.storage, &ending_time)?;
+    CONFIG.save(deps.storage, &cfg)?;
 
-    let amount = must_pay(&info, BOND_DENOM)?;
-    let msgs = get_delegation_msgs(&deps.querier, amount.u128())?;
+    let amount = must_pay(&info, &cfg.bond_denom)?;
+    let msgs = get_delegation_msgs(&deps.querier, amount.u128(), &cfg.bond_denom)?;
 
     Ok(Response::new().add_messages(msgs))
 }
@@ -27,11 +27,11 @@ pub fn force_unbond(deps: DepsMut, env: Env) -> StdResult<Response<MarsMsg>> {
 }
 
 pub fn unbond(deps: DepsMut, env: Env) -> Result<Response<MarsMsg>, ContractError> {
-    let ending_time = ENDING_TIME.load(deps.storage)?;
+    let cfg = CONFIG.load(deps.storage)?;
     let current_time = env.block.time.seconds();
 
-    if current_time < ending_time {
-        return Err(ContractError::ending_time_not_reached(ending_time, current_time));
+    if current_time < cfg.ending_time {
+        return Err(ContractError::ending_time_not_reached(cfg.ending_time, current_time));
     }
 
     let msgs = get_undelegate_msgs(&deps.querier, &env.contract.address)?;
@@ -60,12 +60,16 @@ pub fn refund(deps: DepsMut, env: Env) -> Result<Response<MarsMsg>, ContractErro
 /// https://github.com/steak-enjoyers/steak/blob/v2.0.0-rc0/contracts/hub/src/math.rs#L52-L90
 ///
 /// NOTE: We don't handle the case where the number of validators is zero, because it's impossible.
-pub fn get_delegation_msgs(querier: &QuerierWrapper, tokens: u128) -> StdResult<Vec<StakingMsg>> {
+pub fn get_delegation_msgs(
+    querier: &QuerierWrapper,
+    amount: u128,
+    denom: &str,
+) -> StdResult<Vec<StakingMsg>> {
     let validators = querier.query_all_validators()?;
     let num_validators = validators.len() as u128;
 
-    let tokens_per_validator = tokens / num_validators;
-    let remainder = tokens % num_validators;
+    let tokens_per_validator = amount / num_validators;
+    let remainder = amount % num_validators;
 
     Ok(validators
         .into_iter()
@@ -79,7 +83,7 @@ pub fn get_delegation_msgs(querier: &QuerierWrapper, tokens: u128) -> StdResult<
             let tokens_for_validator = tokens_per_validator + remainder_for_validator;
             StakingMsg::Delegate {
                 validator: validator.address,
-                amount: coin(tokens_for_validator, BOND_DENOM),
+                amount: coin(tokens_for_validator, denom),
             }
         })
         .collect())

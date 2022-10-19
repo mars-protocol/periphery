@@ -1,7 +1,7 @@
 use cosmwasm_std::{Deps, StdResult};
 
-use crate::state::ENDING_TIME;
+use crate::{msg::Config, state::CONFIG};
 
-pub fn query_ending_time(deps: Deps) -> StdResult<u64> {
-    ENDING_TIME.load(deps.storage)
+pub fn query_config(deps: Deps) -> StdResult<Config> {
+    CONFIG.load(deps.storage)
 }

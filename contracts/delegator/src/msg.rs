@@ -1,9 +1,10 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 
-pub const BOND_DENOM: &str = "umars";
-
 #[cw_serde]
-pub struct InstantiateMsg {
+pub struct Config {
+    /// Denomination of the coin that will be staked.
+    pub bond_denom: String,
+
     /// The ending time for the delegation program, as UNIX timestamp.
     ///
     /// Once this time has elapsed, anyone can invoke the `unbond` method to unbond the delegations.
@@ -12,6 +13,8 @@ pub struct InstantiateMsg {
     /// they see fit, ignoring the ending time, by invoking the `force_unbond` sudo message.
     pub ending_time: u64,
 }
+
+pub type InstantiateMsg = Config;
 
 #[cw_serde]
 pub enum SudoMsg {
@@ -36,7 +39,7 @@ pub enum ExecuteMsg {
 #[cw_serde]
 #[derive(QueryResponses)]
 pub enum QueryMsg {
-    /// The ending time for the delegation program.
-    #[returns(u64)]
-    EndingTime {},
+    /// Return the contract configuration.
+    #[returns(Config)]
+    Config {},
 }
