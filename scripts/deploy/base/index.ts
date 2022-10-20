@@ -17,7 +17,7 @@ export const taskRunner = async (config: DeploymentConfig, address: Addresses) =
     await deployer.saveDeploymentAddrsToFile()
 
     //update owner to multisig address
-    // await deployer.updateFiltererContractOwner()
+    await deployer.updateFiltererContractOwner()
 
   } catch (e) {
     printRed(e)
