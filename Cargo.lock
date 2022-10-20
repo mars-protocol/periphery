@@ -156,16 +156,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cosmwasm-storage"
-version = "1.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cdc9b8229a8b09eb7673851f3e97cbb8832ae93a9d589800fa67ef1a2daef641"
-dependencies = [
- "cosmwasm-std",
- "serde",
-]
-
-[[package]]
 name = "cpufeatures"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -213,25 +203,6 @@ dependencies = [
  "rand_core 0.5.1",
  "subtle",
  "zeroize",
-]
-
-[[package]]
-name = "cw-multi-test"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2519fd64b6b8c7c4e77c317e665bd19b438db3e8e4867241fa6a31cf060feda9"
-dependencies = [
- "anyhow",
- "cosmwasm-std",
- "cosmwasm-storage",
- "cw-storage-plus 0.15.0",
- "cw-utils",
- "derivative",
- "itertools",
- "prost 0.9.0",
- "schemars",
- "serde",
- "thiserror",
 ]
 
 [[package]]
@@ -460,9 +431,9 @@ dependencies = [
 
 [[package]]
 name = "itertools"
-version = "0.10.4"
+version = "0.10.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d8bf247779e67a9082a4790b45e71ac7cfd1321331a5c856a74a9faebdab78d0"
+checksum = "b0fd2260e829bddf4cb6ea802289de2f86d6a7a690192fbe91b3f46e0f2c8473"
 dependencies = [
  "either",
 ]
@@ -492,18 +463,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "349d5a591cd28b49e1d1037471617a32ddcda5731b99419008085f72d5a53836"
 
 [[package]]
-name = "mars-address-provider"
-version = "0.1.0"
-dependencies = [
- "bech32",
- "cosmwasm-std",
- "cw-storage-plus 0.15.0",
- "cw2",
- "mars-outpost",
- "thiserror",
-]
-
-[[package]]
 name = "mars-airdrop"
 version = "0.1.0"
 dependencies = [
@@ -513,27 +472,22 @@ dependencies = [
  "cw-storage-plus 0.15.0",
  "cw2",
  "hex",
+ "mars-types",
  "ripemd",
  "serde",
  "sha2 0.10.2",
 ]
 
 [[package]]
-name = "mars-health"
+name = "mars-delegator"
 version = "0.1.0"
 dependencies = [
- "cosmwasm-std",
- "mars-outpost",
-]
-
-[[package]]
-name = "mars-incentives"
-version = "1.0.0"
-dependencies = [
+ "cosmwasm-schema",
  "cosmwasm-std",
  "cw-storage-plus 0.15.0",
+ "cw-utils",
  "cw2",
- "mars-outpost",
+ "mars-types",
  "thiserror",
 ]
 
@@ -546,34 +500,6 @@ dependencies = [
  "cw2",
  "mars-outpost",
  "mars-testing",
- "schemars",
- "serde",
- "thiserror",
-]
-
-[[package]]
-name = "mars-oracle-base"
-version = "0.1.0"
-dependencies = [
- "cosmwasm-std",
- "cw-storage-plus 0.15.0",
- "mars-outpost",
- "schemars",
- "serde",
- "thiserror",
-]
-
-[[package]]
-name = "mars-oracle-osmosis"
-version = "0.1.0"
-dependencies = [
- "cosmwasm-std",
- "cw-storage-plus 0.15.0",
- "cw2",
- "mars-oracle-base",
- "mars-osmosis",
- "mars-outpost",
- "osmosis-std",
  "schemars",
  "serde",
  "thiserror",
@@ -599,65 +525,25 @@ dependencies = [
 ]
 
 [[package]]
-name = "mars-red-bank"
-version = "0.1.0"
-dependencies = [
- "cosmwasm-std",
- "cw-storage-plus 0.15.0",
- "cw-utils",
- "cw2",
- "mars-health",
- "mars-outpost",
- "thiserror",
-]
-
-[[package]]
-name = "mars-rewards-collector-base"
-version = "0.1.0"
-dependencies = [
- "cosmwasm-std",
- "cw-storage-plus 0.15.0",
- "mars-outpost",
- "schemars",
- "serde",
- "thiserror",
-]
-
-[[package]]
-name = "mars-rewards-collector-osmosis"
-version = "0.1.0"
-dependencies = [
- "cosmwasm-std",
- "cw-storage-plus 0.15.0",
- "cw2",
- "mars-osmosis",
- "mars-outpost",
- "mars-rewards-collector-base",
- "osmosis-std",
- "schemars",
- "serde",
- "thiserror",
-]
-
-[[package]]
 name = "mars-testing"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "cosmwasm-std",
- "cw-multi-test",
- "mars-address-provider",
- "mars-incentives",
- "mars-oracle-osmosis",
  "mars-osmosis",
  "mars-outpost",
- "mars-red-bank",
- "mars-rewards-collector-osmosis",
  "osmosis-std",
- "prost 0.11.0",
+ "prost",
  "schemars",
  "serde",
  "thiserror",
+]
+
+[[package]]
+name = "mars-types"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
 ]
 
 [[package]]
@@ -705,7 +591,7 @@ dependencies = [
  "chrono",
  "cosmwasm-std",
  "osmosis-std-derive",
- "prost 0.11.0",
+ "prost",
  "prost-types",
  "schemars",
  "serde",
@@ -745,35 +631,12 @@ dependencies = [
 
 [[package]]
 name = "prost"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "444879275cb4fd84958b1a1d5420d15e6fcf7c235fe47f053c9c2a80aceb6001"
-dependencies = [
- "bytes",
- "prost-derive 0.9.0",
-]
-
-[[package]]
-name = "prost"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "399c3c31cdec40583bb68f0b18403400d01ec4289c383aa047560439952c4dd7"
 dependencies = [
  "bytes",
- "prost-derive 0.11.0",
-]
-
-[[package]]
-name = "prost-derive"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f9cc1a3263e07e0bf68e96268f37665207b49560d98739662cdfaae215c720fe"
-dependencies = [
- "anyhow",
- "itertools",
- "proc-macro2",
- "quote",
- "syn",
+ "prost-derive",
 ]
 
 [[package]]
@@ -796,7 +659,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4dfaa718ad76a44b3415e6c4d53b17c8f99160dcb3a99b10470fce8ad43f6e3e"
 dependencies = [
  "bytes",
- "prost 0.11.0",
+ "prost",
 ]
 
 [[package]]
