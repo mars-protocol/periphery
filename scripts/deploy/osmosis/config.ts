@@ -1,4 +1,4 @@
-import { DeploymentConfig, AssetConfig, MultisigConfig } from '../../types/config'
+import { DeploymentConfig, AssetConfig, Addresses } from '../../types/config'
 
 export const osmosisTestnetConfig: DeploymentConfig = {
   chainName: 'osmosis',
@@ -80,6 +80,7 @@ export const atomAsset: AssetConfig = {
   symbol: 'ATOM',
 }
 
-export const osmosisMultisig: MultisigConfig = {
-  address: 'osmo1zwt8al0cev8gfs8esxq5h340m6edjanwmvt7wy',
+export const osmosisAddresses: Addresses = {
+  multisig: 'osmo1zwt8al0cev8gfs8esxq5h340m6edjanwmvt7wy',
+  addressProvider: 'osmo1cnsrp4aj2wq8gx0eyelc4r8aj0m6s9mct6gdhxwlaymaczfayvyq9rxrm2',
 }

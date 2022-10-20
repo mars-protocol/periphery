@@ -7,7 +7,10 @@
     "generate-types": "yarn rust-schema && tsc --project codegen-tsconfig.json && rm -rf types/generated && node build/codegen && node build/codegen/insertIgnores.js",
     "rust-schema": "cd ../ && cargo make generate-all-schemas && cd scripts",
     "compile": "./build_artifacts.sh",
-    "build": "tsc"
+    "build": "tsc",
+    "lint": "yarn format-check && eslint . && yarn build",
+    "format": "prettier --write .",
+    "format-check": "prettier --ignore-path .gitignore --check ."
   },
   "dependencies": {
     "@cosmwasm/ts-codegen": "^0.19.0",

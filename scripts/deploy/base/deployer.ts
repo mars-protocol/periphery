@@ -1,4 +1,4 @@
-import { AssetConfig, DeploymentConfig, MultisigConfig } from '../../types/config'
+import { DeploymentConfig, Addresses } from '../../types/config'
 import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate'
 import * as fs from 'fs'
 import { printBlue, printGreen, printRed, printYellow } from '../../utils/chalk'
@@ -14,7 +14,7 @@ export class Deployer {
     public client: SigningCosmWasmClient,
     public deployerAddress: string,
     private storage: Storage,
-    public multisig: MultisigConfig,
+    public addresses: Addresses,
   ) {}
 
   async saveStorage() {
@@ -63,7 +63,7 @@ export class Deployer {
       msg,
       `mars-${name}`,
       'auto',
-      { admin: this.multisig.address },
+      { admin: this.addresses.multisig },
     )
 
     this.storage.addresses[name] = redBankContractAddress
@@ -75,7 +75,7 @@ export class Deployer {
   async instantiateLiquidationFilterer() {
     const msg = {
       owner: this.deployerAddress,
-      address_provider: this.storage.addresses.addressProvider!,
+      address_provider: this.addresses.addressProvider,
     }
     await this.instantiate('liquidationFilterer', this.storage.codeIds.liquidationFilterer!, msg)
   }
@@ -91,7 +91,7 @@ export class Deployer {
   async updateFiltererContractOwner() {
     const msg = {
       update_config: {
-        owner: this.multisig.address,
+        owner: this.addresses.multisig,
       },
     }
     await this.client.execute(this.deployerAddress, this.storage.addresses.liquidationFilterer!, msg, 'auto')
@@ -103,7 +103,7 @@ export class Deployer {
       },
     )) as { owner: string; prefix: string }
 
-    assert.equal(filtererConfig.owner, this.multisig.address)
+    assert.equal(filtererConfig.owner, this.addresses.multisig)
     printGreen('It is confirmed that all contracts have transferred ownership to the Multisig')
   }
 }

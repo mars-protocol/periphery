@@ -36,7 +36,8 @@ export interface DeploymentConfig {
     symbol: string
   }
   
-  export interface MultisigConfig {
-    address: string
+  export interface Addresses {
+    multisig: string
+    addressProvider:string 
   }
   

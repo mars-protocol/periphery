@@ -1,6 +1,6 @@
 import { taskRunner } from '../base'
-import { osmosisMultisig, osmosisTestnetConfig } from './config.js'
+import { osmosisAddresses, osmosisTestnetConfig } from './config.js'
 
 void (async function () {
-  await taskRunner(osmosisTestnetConfig, osmosisMultisig)
+  await taskRunner(osmosisTestnetConfig, osmosisAddresses)
 })()
