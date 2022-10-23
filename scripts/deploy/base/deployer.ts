@@ -71,7 +71,7 @@ export class Deployer {
       `${this.config.chainId} :: ${name} Contract Address : ${this.storage.addresses[name]}`,
     )
   }
- 
+
   async instantiateLiquidationFilterer() {
     const msg = {
       owner: this.deployerAddress,
@@ -94,7 +94,12 @@ export class Deployer {
         owner: this.addresses.multisig,
       },
     }
-    await this.client.execute(this.deployerAddress, this.storage.addresses.liquidationFilterer!, msg, 'auto')
+    await this.client.execute(
+      this.deployerAddress,
+      this.storage.addresses.liquidationFilterer!,
+      msg,
+      'auto',
+    )
     printYellow('Owner updated to Mutlisig for Liquidation Filterer')
     const filtererConfig = (await this.client.queryContractSmart(
       this.storage.addresses.liquidationFilterer!,

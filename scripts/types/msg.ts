@@ -1,5 +1,4 @@
-export type InstantiateMsgs =
-  | FiltererInstantiateMsg
+export type InstantiateMsgs = FiltererInstantiateMsg
 
 export interface FiltererInstantiateMsg {
   owner: string
