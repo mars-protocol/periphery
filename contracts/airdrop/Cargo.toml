@@ -3,7 +3,6 @@ name = "mars-airdrop"
 version = "0.1.0"
 authors = ["larry <larry@delphidigital.io>"]
 edition = "2021"
-license = "UNLICENSED"
 repository = "https://github.com/mars-protocol/periphery"
 
 [lib]
