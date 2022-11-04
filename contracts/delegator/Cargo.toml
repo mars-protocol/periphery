@@ -17,3 +17,6 @@ cw-storage-plus = "0.15"
 cw-utils = "0.15"
 mars-types = { path = "../../packages/types" }
 thiserror = "1.0"
+
+[profile.release]
+overflow-checks = true
