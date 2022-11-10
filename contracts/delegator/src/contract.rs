@@ -15,11 +15,11 @@ pub const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub fn instantiate(
     deps: DepsMut,
     _env: Env,
-    info: MessageInfo,
+    _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     cw2::set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
-    execute::init(deps, info, msg)
+    execute::init(deps, msg)
 }
 
 #[entry_point]
@@ -37,6 +37,7 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response<MarsMsg>, ContractError> {
     match msg {
+        ExecuteMsg::Bond {} => execute::bond(deps, env),
         ExecuteMsg::Unbond {} => execute::unbond(deps, env),
         ExecuteMsg::Refund {} => execute::refund(deps, env),
     }

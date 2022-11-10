@@ -27,6 +27,9 @@ pub enum SudoMsg {
 
 #[cw_serde]
 pub enum ExecuteMsg {
+    /// Delegate tokens that the contract holds evenly to the current validator set.
+    Bond {},
+
     /// Unbond the delegations.
     ///
     /// Can be invoked by anyone after `ending_time` is reached.

@@ -1,8 +1,6 @@
-#[cfg(not(feature = "library"))]
 use cosmwasm_std::{
-    coin, Addr, DepsMut, Env, MessageInfo, QuerierWrapper, Response, StakingMsg, StdResult,
+    coin, Addr, DepsMut, Env, QuerierWrapper, Response, StakingMsg, StdResult, Uint128,
 };
-use cw_utils::must_pay;
 
 use mars_types::MarsMsg;
 
@@ -10,15 +8,35 @@ use crate::error::ContractError;
 use crate::msg::Config;
 use crate::state::CONFIG;
 
-pub fn init(deps: DepsMut, info: MessageInfo, cfg: Config) -> Result<Response, ContractError> {
+pub fn init(deps: DepsMut, cfg: Config) -> Result<Response, ContractError> {
     // We don't implement a validity check of the ending time.
     // The deployer must make sure to provide a valid value.
     CONFIG.save(deps.storage, &cfg)?;
 
-    let amount = must_pay(&info, &cfg.bond_denom)?;
+    Ok(Response::new())
+}
+
+pub fn bond(deps: DepsMut, env: Env) -> Result<Response<MarsMsg>, ContractError> {
+    let cfg = CONFIG.load(deps.storage)?;
+
+    let amount = deps
+        .querier
+        .query_all_balances(&env.contract.address)?
+        .into_iter()
+        .find(|coin| coin.denom == cfg.bond_denom)
+        .map(|coin| coin.amount)
+        .unwrap_or_else(Uint128::zero);
+
+    if amount.is_zero() {
+        return Err(ContractError::NothingToBond);
+    }
+
     let msgs = get_delegation_msgs(&deps.querier, amount.u128(), &cfg.bond_denom)?;
 
-    Ok(Response::new().add_messages(msgs))
+    Ok(Response::new()
+        .add_messages(msgs)
+        .add_attribute("action", "periphery/delegator/bond")
+        .add_attribute("amount", format!("{amount}{}", cfg.bond_denom)))
 }
 
 pub fn force_unbond(deps: DepsMut, env: Env) -> StdResult<Response<MarsMsg>> {
