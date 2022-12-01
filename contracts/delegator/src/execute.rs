@@ -128,7 +128,7 @@ pub fn get_delegation_msgs(
             // ```
             // let remainder_for_validator = u128::from((idx + 1) as u128 <= remainder);
             // ```
-            // however, I feel this is much less readable what we have now.
+            // however, I feel this is much less readable than what we have now.
             #[allow(clippy::bool_to_int_with_if)]
             let remainder_for_validator = if (idx + 1) as u128 <= remainder {
                 1
