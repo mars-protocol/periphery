@@ -52,7 +52,8 @@ pub fn bond(
             &bond_denom,
         )?)
         .add_attribute("action", "periphery/delegator/bond")
-        .add_attribute("amount", balance.to_string()))
+        .add_attribute("amount", balance.to_string())
+        .add_attribute("ending_time", ending_time.to_string()))
 }
 
 pub fn force_unbond(deps: DepsMut, env: Env) -> Result<Response<MarsMsg>, ContractError> {
