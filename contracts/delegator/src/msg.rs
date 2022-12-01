@@ -61,6 +61,6 @@ pub struct ConfigResponse {
     pub bond_denom: String,
 
     /// The ending time for the delegation program, as UNIX timestamp.
-    /// Unspecified until invokes the `bond` sudo method.
+    /// Unspecified until governance invokes the `bond` sudo method.
     pub ending_time: Option<u64>,
 }
