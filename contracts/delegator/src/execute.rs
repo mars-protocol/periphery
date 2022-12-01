@@ -135,9 +135,7 @@ pub fn get_delegation_msgs(
             } else {
                 0
             };
-
             let tokens_for_validator = tokens_per_validator + remainder_for_validator;
-
             StakingMsg::Delegate {
                 validator: validator.address,
                 amount: coin(tokens_for_validator, denom),
