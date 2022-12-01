@@ -6,6 +6,9 @@ pub enum ContractError {
     #[error(transparent)]
     Std(#[from] StdError),
 
+    #[error("a delegation program already exists")]
+    DelegationExists,
+
     #[error("contract does not hold any coin to be bonded")]
     NothingToBond,
 

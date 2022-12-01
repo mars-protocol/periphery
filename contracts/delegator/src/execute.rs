@@ -21,11 +21,19 @@ pub fn bond(
 ) -> Result<Response<MarsMsg>, ContractError> {
     let bond_denom = BOND_DENOM.load(deps.storage)?;
 
+    // there must not already be an existing delegation program
+    let opt = ENDING_TIME.may_load(deps.storage)?;
+    if opt.is_some() {
+        return Err(ContractError::DelegationExists);
+    }
+
+    // the contract must have a non-zero amount of coins to delegate
     let balance = deps.querier.query_balance(&env.contract.address, &bond_denom)?;
     if balance.amount.is_zero() {
         return Err(ContractError::NothingToBond);
     }
 
+    // the delegation program's ending time must be later than the current time
     let current_time = env.block.time.seconds();
     if ending_time <= current_time {
         return Err(ContractError::InvalidEndingTime {
