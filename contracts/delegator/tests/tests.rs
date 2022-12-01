@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use cosmwasm_std::testing::{
     mock_dependencies, mock_env, mock_info, MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR,
 };
@@ -8,10 +10,16 @@ use cosmwasm_std::{
 
 use mars_delegator::contract::{execute, instantiate, query, sudo};
 use mars_delegator::error::ContractError;
-use mars_delegator::msg::{Config, ExecuteMsg, InstantiateMsg, QueryMsg, SudoMsg};
+use mars_delegator::msg::{ConfigResponse, ExecuteMsg, InstantiateMsg, QueryMsg, SudoMsg};
+use mars_delegator::state::ENDING_TIME;
 use mars_types::MarsMsg;
 
 pub const BOND_DENOM: &str = "umars";
+
+/// Collect a &[&str] into BTreeSet<String>
+fn btreeset(validators: &[&str]) -> BTreeSet<String> {
+    validators.to_vec().into_iter().map(String::from).collect()
+}
 
 fn mock_env_at_timestamp(timestamp: u64) -> Env {
     let mut env = mock_env();
@@ -77,7 +85,6 @@ fn setup_test() -> OwnedDeps<MockStorage, MockApi, MockQuerier, Empty> {
         mock_info("deployer", &coins(10000, BOND_DENOM)),
         InstantiateMsg {
             bond_denom: BOND_DENOM.into(),
-            ending_time: 10000,
         },
     )
     .unwrap();
@@ -87,44 +94,67 @@ fn setup_test() -> OwnedDeps<MockStorage, MockApi, MockQuerier, Empty> {
 
 #[test]
 fn instantiating() {
+    let deps = setup_test();
+
+    // bond denom should have been saved
+    // ending time should have not been specified yet
+    let cfg_bytes = query(deps.as_ref(), mock_env(), QueryMsg::Config {}).unwrap();
+    let cfg: ConfigResponse = from_binary(&cfg_bytes).unwrap();
+    assert_eq!(
+        cfg,
+        ConfigResponse {
+            bond_denom: "umars".into(),
+            ending_time: None,
+        },
+    );
+}
+
+#[test]
+fn bonding() {
     let mut deps = setup_test();
 
-    let res = instantiate(
+    // prior to invoking `bond`, governance must have passed a community pool
+    // spending proposal to transfer some tokens to the contract.
+    // here we give the contract 10000 umars
+    deps.querier.update_balance(MOCK_CONTRACT_ADDR, coins(10000, BOND_DENOM));
+
+    let res = sudo(
         deps.as_mut(),
-        mock_env(),
-        mock_info("deployer", &coins(10000, BOND_DENOM)),
-        InstantiateMsg {
-            bond_denom: BOND_DENOM.into(),
+        mock_env_at_timestamp(1),
+        SudoMsg::Bond {
+            validators: btreeset(&["larry", "pumpkin", "jake"]),
             ending_time: 10000,
         },
     )
     .unwrap();
 
+    // NOTE: delegate messages are sorted alphabetically by validator addresses
     assert_eq!(
         res.messages,
         vec![
             SubMsg::new(StakingMsg::Delegate {
-                validator: "larry".into(),
+                validator: "jake".into(),
                 amount: coin(3334, BOND_DENOM)
             }),
             SubMsg::new(StakingMsg::Delegate {
-                validator: "jake".into(),
+                validator: "larry".into(),
                 amount: coin(3333, BOND_DENOM)
             }),
             SubMsg::new(StakingMsg::Delegate {
                 validator: "pumpkin".into(),
                 amount: coin(3333, BOND_DENOM)
-            }),
-        ]
+            })
+        ],
     );
 
+    // the ending time should have been updated
     let cfg_bytes = query(deps.as_ref(), mock_env(), QueryMsg::Config {}).unwrap();
-    let cfg: Config = from_binary(&cfg_bytes).unwrap();
+    let cfg: ConfigResponse = from_binary(&cfg_bytes).unwrap();
     assert_eq!(
         cfg,
-        Config {
+        ConfigResponse {
             bond_denom: "umars".into(),
-            ending_time: 10000,
+            ending_time: Some(10000),
         },
     );
 }
@@ -157,6 +187,10 @@ fn forced_unbonding() {
 fn unbonding() {
     let mut deps = setup_test();
 
+    // ending time is set by the `bond` sudo method.
+    // here we just set it
+    ENDING_TIME.save(deps.as_mut().storage, &10000).unwrap();
+
     // cannot unbond before the ending time is reached
     {
         let err = execute(
@@ -166,7 +200,13 @@ fn unbonding() {
             ExecuteMsg::Unbond {},
         )
         .unwrap_err();
-        assert_eq!(err, ContractError::ending_time_not_reached(10000, 9999));
+        assert_eq!(
+            err,
+            ContractError::EndingTimeNotReached {
+                ending_time: 10000,
+                current_time: 9999
+            }
+        );
     }
 
     // can unbond after ending time is reached

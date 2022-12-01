@@ -1,5 +1,5 @@
 use cw_storage_plus::Item;
 
-use crate::msg::Config;
+pub const BOND_DENOM: Item<String> = Item::new("bond_denom");
 
-pub const CONFIG: Item<Config> = Item::new("config");
+pub const ENDING_TIME: Item<u64> = Item::new("ending_time");

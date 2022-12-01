@@ -1,62 +1,72 @@
-use cosmwasm_std::{
-    coin, Addr, DepsMut, Env, QuerierWrapper, Response, StakingMsg, StdResult, Uint128,
-};
+use std::collections::BTreeSet;
+
+use cosmwasm_std::{coin, Addr, DepsMut, Env, QuerierWrapper, Response, StakingMsg, StdResult};
 
 use mars_types::MarsMsg;
 
 use crate::error::ContractError;
-use crate::msg::Config;
-use crate::state::CONFIG;
+use crate::state::{BOND_DENOM, ENDING_TIME};
 
-pub fn init(deps: DepsMut, cfg: Config) -> Result<Response, ContractError> {
-    // We don't implement a validity check of the ending time.
-    // The deployer must make sure to provide a valid value.
-    CONFIG.save(deps.storage, &cfg)?;
+pub fn init(deps: DepsMut, bond_denom: String) -> Result<Response, ContractError> {
+    BOND_DENOM.save(deps.storage, &bond_denom)?;
 
     Ok(Response::new())
 }
 
-pub fn bond(deps: DepsMut, env: Env) -> Result<Response<MarsMsg>, ContractError> {
-    let cfg = CONFIG.load(deps.storage)?;
+pub fn bond(
+    deps: DepsMut,
+    env: Env,
+    validators: BTreeSet<String>,
+    ending_time: u64,
+) -> Result<Response<MarsMsg>, ContractError> {
+    let bond_denom = BOND_DENOM.load(deps.storage)?;
 
-    let amount = deps
-        .querier
-        .query_all_balances(&env.contract.address)?
-        .into_iter()
-        .find(|coin| coin.denom == cfg.bond_denom)
-        .map(|coin| coin.amount)
-        .unwrap_or_else(Uint128::zero);
-
-    if amount.is_zero() {
+    let balance = deps.querier.query_balance(&env.contract.address, &bond_denom)?;
+    if balance.amount.is_zero() {
         return Err(ContractError::NothingToBond);
     }
 
-    let msgs = get_delegation_msgs(&deps.querier, amount.u128(), &cfg.bond_denom)?;
+    let current_time = env.block.time.seconds();
+    if ending_time <= current_time {
+        return Err(ContractError::InvalidEndingTime {
+            ending_time,
+            current_time,
+        });
+    }
+
+    ENDING_TIME.save(deps.storage, &ending_time)?;
 
     Ok(Response::new()
-        .add_messages(msgs)
+        .add_messages(get_delegation_msgs(
+            &deps.querier,
+            validators,
+            balance.amount.u128(),
+            &bond_denom,
+        )?)
         .add_attribute("action", "periphery/delegator/bond")
-        .add_attribute("amount", format!("{amount}{}", cfg.bond_denom)))
+        .add_attribute("amount", balance.to_string()))
 }
 
-pub fn force_unbond(deps: DepsMut, env: Env) -> StdResult<Response<MarsMsg>> {
-    let msgs = get_undelegate_msgs(&deps.querier, &env.contract.address)?;
+pub fn force_unbond(deps: DepsMut, env: Env) -> Result<Response<MarsMsg>, ContractError> {
     Ok(Response::new()
-        .add_messages(msgs)
+        .add_messages(get_undelegate_msgs(&deps.querier, &env.contract.address)?)
         .add_attribute("action", "periphery/delegator/force_unbond"))
 }
 
 pub fn unbond(deps: DepsMut, env: Env) -> Result<Response<MarsMsg>, ContractError> {
-    let cfg = CONFIG.load(deps.storage)?;
+    let ending_time = ENDING_TIME.load(deps.storage)?;
     let current_time = env.block.time.seconds();
 
-    if current_time < cfg.ending_time {
-        return Err(ContractError::ending_time_not_reached(cfg.ending_time, current_time));
+    if current_time < ending_time {
+        return Err(ContractError::EndingTimeNotReached {
+            ending_time,
+            current_time,
+        });
     }
 
-    let msgs = get_undelegate_msgs(&deps.querier, &env.contract.address)?;
-
-    Ok(Response::new().add_messages(msgs).add_attribute("action", "periphery/delegator/unbond"))
+    Ok(Response::new()
+        .add_messages(get_undelegate_msgs(&deps.querier, &env.contract.address)?)
+        .add_attribute("action", "periphery/delegator/unbond"))
 }
 
 pub fn refund(deps: DepsMut, env: Env) -> Result<Response<MarsMsg>, ContractError> {
@@ -73,21 +83,31 @@ pub fn refund(deps: DepsMut, env: Env) -> Result<Response<MarsMsg>, ContractErro
         .add_attribute("action", "periphery/delegator/refund"))
 }
 
-/// Query the validator set, and generate messages to delegate evenly to each validator.
+/// Generate messages to delegate evenly to each validator in the specified list.
 ///
-/// Need to handle the case where the coin balance is not divisible by the number of validators.
+/// Need to handle the case where the coin balance is not divisible by the
+/// number of validators.
 /// For this we use the same algorithm from Steak:
 /// https://github.com/steak-enjoyers/steak/blob/v2.0.0-rc0/contracts/hub/src/math.rs#L52-L90
 ///
-/// NOTE: We don't handle the case where the number of validators is zero, because it's impossible.
+/// NOTE: We don't handle the case where the number of validators is zero,
+/// because it's impossible.
 pub fn get_delegation_msgs(
     querier: &QuerierWrapper,
+    validator_addrs: BTreeSet<String>,
     amount: u128,
     denom: &str,
-) -> StdResult<Vec<StakingMsg>> {
-    let validators = querier.query_all_validators()?;
-    let num_validators = validators.len() as u128;
+) -> Result<Vec<StakingMsg>, ContractError> {
+    let validators = validator_addrs
+        .into_iter()
+        .map(|address| {
+            querier.query_validator(&address)?.ok_or_else(|| ContractError::ValidatorNotFound {
+                address,
+            })
+        })
+        .collect::<Result<Vec<_>, ContractError>>()?;
 
+    let num_validators = validators.len() as u128;
     let tokens_per_validator = amount / num_validators;
     let remainder = amount % num_validators;
 

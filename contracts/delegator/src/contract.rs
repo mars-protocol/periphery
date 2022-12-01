@@ -19,12 +19,16 @@ pub fn instantiate(
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     cw2::set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
-    execute::init(deps, msg)
+    execute::init(deps, msg.bond_denom)
 }
 
 #[entry_point]
-pub fn sudo(deps: DepsMut, env: Env, msg: SudoMsg) -> StdResult<Response<MarsMsg>> {
+pub fn sudo(deps: DepsMut, env: Env, msg: SudoMsg) -> Result<Response<MarsMsg>, ContractError> {
     match msg {
+        SudoMsg::Bond {
+            validators,
+            ending_time,
+        } => execute::bond(deps, env, validators, ending_time),
         SudoMsg::ForceUnbond {} => execute::force_unbond(deps, env),
     }
 }
@@ -37,7 +41,6 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response<MarsMsg>, ContractError> {
     match msg {
-        ExecuteMsg::Bond {} => execute::bond(deps, env),
         ExecuteMsg::Unbond {} => execute::unbond(deps, env),
         ExecuteMsg::Refund {} => execute::refund(deps, env),
     }
