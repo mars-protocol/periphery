@@ -70,7 +70,7 @@ pub fn unbond(deps: DepsMut, env: Env) -> Result<Response<MarsMsg>, ContractErro
 }
 
 pub fn refund(deps: DepsMut, env: Env) -> Result<Response<MarsMsg>, ContractError> {
-    let amount = deps.querier.query_all_balances(&env.contract.address)?;
+    let amount = deps.querier.query_all_balances(env.contract.address)?;
 
     if amount.is_empty() {
         return Err(ContractError::NothingToRefund);
@@ -101,7 +101,7 @@ pub fn get_delegation_msgs(
     let validators = validator_addrs
         .into_iter()
         .map(|address| {
-            querier.query_validator(&address)?.ok_or_else(|| ContractError::ValidatorNotFound {
+            querier.query_validator(&address)?.ok_or(ContractError::ValidatorNotFound {
                 address,
             })
         })
@@ -115,12 +115,20 @@ pub fn get_delegation_msgs(
         .into_iter()
         .enumerate()
         .map(|(idx, validator)| {
+            // here clippy suggests the following syntax:
+            // ```
+            // let remainder_for_validator = u128::from((idx + 1) as u128 <= remainder);
+            // ```
+            // however, I feel this is much less readable what we have now.
+            #[allow(clippy::bool_to_int_with_if)]
             let remainder_for_validator = if (idx + 1) as u128 <= remainder {
                 1
             } else {
                 0
             };
+
             let tokens_for_validator = tokens_per_validator + remainder_for_validator;
+
             StakingMsg::Delegate {
                 validator: validator.address,
                 amount: coin(tokens_for_validator, denom),
