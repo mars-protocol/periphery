@@ -12,7 +12,7 @@ fn main() -> std::io::Result<()> {
 
     let contracts = vec![
         "mars-airdrop",
-        "mars-delegator,
+        "mars-delegator",
         "mars-vesting",
     ];
 
