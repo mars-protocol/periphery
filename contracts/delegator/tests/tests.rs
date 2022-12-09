@@ -100,23 +100,7 @@ fn instantiating() {
     )
     .unwrap();
 
-    assert_eq!(
-        res.messages,
-        vec![
-            SubMsg::new(StakingMsg::Delegate {
-                validator: "larry".into(),
-                amount: coin(3334, BOND_DENOM)
-            }),
-            SubMsg::new(StakingMsg::Delegate {
-                validator: "jake".into(),
-                amount: coin(3333, BOND_DENOM)
-            }),
-            SubMsg::new(StakingMsg::Delegate {
-                validator: "pumpkin".into(),
-                amount: coin(3333, BOND_DENOM)
-            }),
-        ]
-    );
+    assert!(res.messages.is_empty());
 
     let cfg_bytes = query(deps.as_ref(), mock_env(), QueryMsg::Config {}).unwrap();
     let cfg: Config = from_binary(&cfg_bytes).unwrap();

@@ -139,7 +139,7 @@ fn claiming() {
                 terra_acct_pk: terra_acct_pk.to_string(),
                 mars_acct: mars_acct.to_string(),
                 amount,
-                proof: proof.clone(),
+                proof,
                 signature: "7f73595b39e4e8ed853e3fbe49ca32438e9a9b6f1f578dfa6acfda1d267c60953b749ba2b091b6058c0258db3f9231a4529651962b718b77db3e0ed8887e7cd1".to_string(),
             },
         )
