@@ -1,0 +1,121 @@
+{
+  "contract_name": "mars-delegator",
+  "contract_version": "0.1.0",
+  "idl_version": "1.0.0",
+  "instantiate": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "InstantiateMsg",
+    "type": "object",
+    "required": [
+      "bond_denom",
+      "ending_time"
+    ],
+    "properties": {
+      "bond_denom": {
+        "description": "Denomination of the coin that will be staked.",
+        "type": "string"
+      },
+      "ending_time": {
+        "description": "The ending time for the delegation program, as UNIX timestamp.\n\nOnce this time has elapsed, anyone can invoke the `unbond` method to unbond the delegations.\n\nAdditionally, Mars Hub governance can decide to prematurely end the delegation program if they see fit, ignoring the ending time, by invoking the `force_unbond` sudo message.",
+        "type": "integer",
+        "format": "uint64",
+        "minimum": 0.0
+      }
+    },
+    "additionalProperties": false
+  },
+  "execute": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "ExecuteMsg",
+    "oneOf": [
+      {
+        "description": "Delegate tokens that the contract holds evenly to the current validator set.",
+        "type": "object",
+        "required": [
+          "bond"
+        ],
+        "properties": {
+          "bond": {
+            "type": "object",
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "description": "Unbond the delegations.\n\nCan be invoked by anyone after `ending_time` is reached.",
+        "type": "object",
+        "required": [
+          "unbond"
+        ],
+        "properties": {
+          "unbond": {
+            "type": "object",
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "description": "Donate all coins held by the contract to the community pool.",
+        "type": "object",
+        "required": [
+          "refund"
+        ],
+        "properties": {
+          "refund": {
+            "type": "object",
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    ]
+  },
+  "query": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "QueryMsg",
+    "oneOf": [
+      {
+        "description": "Return the contract configuration.",
+        "type": "object",
+        "required": [
+          "config"
+        ],
+        "properties": {
+          "config": {
+            "type": "object",
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    ]
+  },
+  "migrate": null,
+  "sudo": null,
+  "responses": {
+    "config": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Config",
+      "type": "object",
+      "required": [
+        "bond_denom",
+        "ending_time"
+      ],
+      "properties": {
+        "bond_denom": {
+          "description": "Denomination of the coin that will be staked.",
+          "type": "string"
+        },
+        "ending_time": {
+          "description": "The ending time for the delegation program, as UNIX timestamp.\n\nOnce this time has elapsed, anyone can invoke the `unbond` method to unbond the delegations.\n\nAdditionally, Mars Hub governance can decide to prematurely end the delegation program if they see fit, ignoring the ending time, by invoking the `force_unbond` sudo message.",
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
