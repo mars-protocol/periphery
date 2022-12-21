@@ -1,0 +1,15 @@
+extend = [
+    { path = "schema.Makefile.toml" }
+]
+
+[config]
+default_to_workspace = false
+
+[tasks.build]
+command = "cargo"
+args = ["build", "--release", "--target", "wasm32-unknown-unknown", "--locked"]
+
+[tasks.all-actions]
+dependencies = [
+    "generate-all-schemas",
+]

@@ -7,6 +7,7 @@ repository = "https://github.com/mars-protocol/periphery"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
+doctest = false
 
 [features]
 backtraces = ["cosmwasm-std/backtraces"]
@@ -19,6 +20,7 @@ cw-storage-plus = "0.15"
 
 [dev-dependencies]
 serde = { version = "1.0", default-features = false, features = ["derive"] }
+cosmwasm-schema = "1.1"
 
 [profile.release]
 overflow-checks = true
