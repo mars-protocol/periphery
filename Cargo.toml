@@ -2,16 +2,11 @@
 members = ["contracts/*", "packages/*"]
 
 [workspace.dependencies]
-bech32          = "0.9"
 cosmwasm-schema = "1.1"
 cosmwasm-std    = "1.1"
 cw2             = "1.0"
 cw-storage-plus = "1.0"
-hex             = "0.4"
-ripemd          = "0.1"
-schemars        = "0.8"
 serde           = "1.0"
-sha2            = "0.10"
 thiserror       = "1.0"
 
 [profile.release]
