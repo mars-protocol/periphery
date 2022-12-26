@@ -21,7 +21,7 @@ pub fn bond(deps: DepsMut, env: Env) -> Result<Response<MarsMsg>, ContractError>
 
     let amount = deps
         .querier
-        .query_all_balances(&env.contract.address)?
+        .query_all_balances(env.contract.address)?
         .into_iter()
         .find(|coin| coin.denom == cfg.bond_denom)
         .map(|coin| coin.amount)
@@ -60,7 +60,7 @@ pub fn unbond(deps: DepsMut, env: Env) -> Result<Response<MarsMsg>, ContractErro
 }
 
 pub fn refund(deps: DepsMut, env: Env) -> Result<Response<MarsMsg>, ContractError> {
-    let amount = deps.querier.query_all_balances(&env.contract.address)?;
+    let amount = deps.querier.query_all_balances(env.contract.address)?;
 
     if amount.is_empty() {
         return Err(ContractError::NothingToRefund);
