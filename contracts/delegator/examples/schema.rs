@@ -1,7 +1,6 @@
 use cosmwasm_schema::write_api;
-use mars_delegator::msg::ExecuteMsg;
-use mars_delegator::msg::InstantiateMsg;
-use mars_delegator::msg::QueryMsg;
+
+use mars_delegator::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 
 fn main() {
     write_api! {

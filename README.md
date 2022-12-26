@@ -2,12 +2,17 @@
 
 Peripheral smart contracts to be deployed on Mars Hub
 
-## Schemas
+## How to use
+
+Generate schemas:
+
 ```shell
-cargo make --makefile Makefile.toml generate-all-schemas
+cargo make generate-all-schemas
 ```
-## Types 
+
+Generate TypeScript code from schemas:
+
 ```shell
-cd scripts 
+cd scripts
 yarn generate-types
 ```
