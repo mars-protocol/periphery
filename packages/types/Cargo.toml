@@ -1,10 +1,10 @@
 [package]
-name = "mars-types"
-version = "0.1.0"
-authors = ["larry <larry@delphidigital.io>"]
-edition = "2021"
+name       = "mars-types"
+version    = "0.1.0"
+authors    = ["larry <larry@delphidigital.io>"]
+edition    = "2021"
 repository = "https://github.com/mars-protocol/periphery"
 
 [dependencies]
-cosmwasm-std = "1.1"
-cosmwasm-schema = "1.1"
+cosmwasm-schema = { workspace = true }
+cosmwasm-std    = { workspace = true }

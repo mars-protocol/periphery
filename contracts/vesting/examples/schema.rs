@@ -1,4 +1,5 @@
 use cosmwasm_schema::write_api;
+
 use mars_vesting::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 
 fn main() {

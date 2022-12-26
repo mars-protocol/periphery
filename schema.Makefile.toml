@@ -8,16 +8,16 @@ fn main() -> std::io::Result<()> {
     fs::remove_dir_all("schema");
     fs::remove_dir_all("schemas");
     fs::create_dir("schemas")?;
-    println!("Done");
+    println!("Created `schemas` directory");
 
     let contracts = vec![
+        "mars-vesting",
         "mars-airdrop",
         "mars-delegator",
-        "mars-vesting",
     ];
 
     for contract in contracts {
-        println!("{}", contract);
+        println!("Generating schema for `{}` contract", contract);
 
         let output = Command::new("cargo")
             .arg("run")

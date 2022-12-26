@@ -1,4 +1,5 @@
 use cosmwasm_schema::write_api;
+
 use mars_airdrop::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 
 fn main() {
