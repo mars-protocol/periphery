@@ -139,13 +139,8 @@ fn creating_positions() {
     assert_eq!(err, StdError::generic_err("wrong amount: must be greater than zero"));
 
     // properly create a position
-    let res = execute(
-        deps.as_mut(),
-        mock_env(),
-        mock_info("owner", &[coin(12345, "umars")]),
-        msg.clone(),
-    )
-    .unwrap();
+    let res = execute(deps.as_mut(), mock_env(), mock_info("owner", &[coin(12345, "umars")]), msg)
+        .unwrap();
     assert_eq!(res.messages.len(), 0);
 
     let position = POSITIONS.load(deps.as_ref().storage, &Addr::unchecked("larry")).unwrap();
@@ -212,7 +207,7 @@ fn terminating_positions() {
     assert_eq!(err, StdError::generic_err("only owner can terminate allocations"));
 
     // owner properly terminates position
-    let res = execute(deps.as_mut(), env.clone(), mock_info("owner", &[]), msg).unwrap();
+    let res = execute(deps.as_mut(), env, mock_info("owner", &[]), msg).unwrap();
     assert_eq!(res.messages.len(), 1);
     assert_eq!(
         res.messages[0],

@@ -95,11 +95,7 @@ pub fn get_delegation_msgs(
         .into_iter()
         .enumerate()
         .map(|(idx, validator)| {
-            let remainder_for_validator = if (idx + 1) as u128 <= remainder {
-                1
-            } else {
-                0
-            };
+            let remainder_for_validator = u128::from((idx + 1) as u128 <= remainder);
             let tokens_for_validator = tokens_per_validator + remainder_for_validator;
             StakingMsg::Delegate {
                 validator: validator.address,

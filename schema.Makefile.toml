@@ -1,13 +1,14 @@
 [tasks.generate-all-schemas]
 script_runner = "@rust"
 script = '''
-use std::{fs, io::Result, process::Command};
+use std::fs;
+use std::process::Command;
 
 fn main() -> Result<()> {
     fs::remove_dir_all("schema");
     fs::remove_dir_all("schemas");
     fs::create_dir("schemas")?;
-    println!("🤖 Created `schemas` directory");
+    println!("Created `schemas` directory");
 
     let contracts = vec![
         "mars-vesting",
@@ -16,7 +17,7 @@ fn main() -> Result<()> {
     ];
 
     for contract in contracts {
-        println!("🤖 Generating schema for `{}` contract", contract);
+        println!("Generating schema for `{}` contract", contract);
 
         let output = Command::new("cargo")
             .arg("run")
