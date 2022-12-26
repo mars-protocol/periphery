@@ -68,7 +68,7 @@ pub fn verify_proof(leaf: &str, merkle_root: &str, merkle_proof: &[String]) -> S
             [proof_bytes, hash]
         };
 
-        sha2::Sha256::digest(&hashes.concat())
+        sha2::Sha256::digest(hashes.concat())
             .as_slice()
             .try_into()
             .map_err(|_| StdError::generic_err("[merkle] hash is of wrong length"))
