@@ -12,7 +12,6 @@ fn main() -> std::io::Result<()> {
 
     let contracts = vec![
         "mars-vesting",
-        "mars-airdrop",
         "mars-delegator",
     ];
 
