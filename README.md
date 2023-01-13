@@ -20,3 +20,7 @@ Generate TypeScript code from schemas:
 cd scripts
 yarn generate-types
 ```
+
+## License
+
+Contents of this repository are open source under [GNU General Public License v3](./LICENSE) or later.

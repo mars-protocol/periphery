@@ -1,9 +1,13 @@
 [package]
-name       = "mars-delegator"
-version    = "0.1.0"
-authors    = ["larry <larry@delphidigital.io>"]
-edition    = "2021"
-repository = "https://github.com/mars-protocol/periphery"
+name          = "mars-delegator"
+version       = { workspace = true }
+authors       = { workspace = true }
+edition       = { workspace = true }
+rust-version  = { workspace = true }
+license       = { workspace = true }
+homepage      = { workspace = true }
+repository    = { workspace = true }
+documentation = { workspace = true }
 
 [lib]
 crate-type = ["cdylib", "rlib"]
