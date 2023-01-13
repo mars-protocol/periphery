@@ -1,6 +1,16 @@
 [workspace]
 members = ["contracts/*", "packages/*"]
 
+[workspace.package]
+version       = "0.1.0"
+authors       = ["Larry Engineer <larry@delphidigital.io>"]
+edition       = "2021"
+rust-version  = "1.65"
+license       = "GPL-v3-or-later"
+homepage      = "https://marsprotocol.io"
+repository    = "https://github.com/mars-protocol/periphery"
+documentation = "https://github.com/mars-protocol/periphery#readme"
+
 [workspace.dependencies]
 cosmwasm-schema = "1.1"
 cosmwasm-std    = "1.1"
