@@ -8,4 +8,4 @@ To mitigate this risk, the Mars community pool will have a portion of its tokens
 
 ## License
 
-Contents of this crate is open source under [GNU General Public License v3](../../LICENSE) or later.
+Contents of this crate are open source under [GNU General Public License v3](../../LICENSE) or later.
