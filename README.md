@@ -2,6 +2,10 @@
 
 Peripheral smart contracts to be deployed on Mars Hub
 
+## Bug bounty
+
+A bug bounty is currently open for Mars Hub and peripheral contracts. See details [here](https://immunefi.com/bounty/mars/).
+
 ## Audits
 
 See reports [here](https://github.com/mars-protocol/mars-audits/tree/main/periphery)
