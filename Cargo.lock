@@ -404,16 +404,7 @@ dependencies = [
  "cosmwasm-std",
  "cw-storage-plus",
  "cw2",
- "mars-types",
  "thiserror",
-]
-
-[[package]]
-name = "mars-types"
-version = "1.0.0"
-dependencies = [
- "cosmwasm-schema",
- "cosmwasm-std",
 ]
 
 [[package]]

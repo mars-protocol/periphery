@@ -9,7 +9,7 @@ use cosmwasm_std::{
 use mars_delegator::contract::{execute, instantiate, query, sudo};
 use mars_delegator::error::ContractError;
 use mars_delegator::msg::{Config, ExecuteMsg, InstantiateMsg, QueryMsg, SudoMsg};
-use mars_types::MarsMsg;
+use mars_delegator::types::MarsMsg;
 
 pub const BOND_DENOM: &str = "umars";
 
