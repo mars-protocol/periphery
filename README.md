@@ -14,7 +14,7 @@ See reports [here](https://github.com/mars-protocol/mars-audits/tree/main/periph
 
 Compile the contracts:
 
-```shell
+```bash
 cargo make rust-optimizer
 ```
 
@@ -27,13 +27,13 @@ a251d4669097ba31f68d0b832af8bd0568bc7ea6b6bd320eeb2b9b59636fbc6e  mars_delegator
 
 Generate schemas:
 
-```shell
+```bash
 cargo make generate-all-schemas
 ```
 
 Generate TypeScript code from schemas:
 
-```shell
+```bash
 cd scripts
 yarn generate-types
 ```
