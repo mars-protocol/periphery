@@ -1,15 +1,17 @@
-use cosmwasm_std::testing::{
-    mock_dependencies, mock_env, mock_info, MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR,
-};
 use cosmwasm_std::{
-    coin, coins, from_binary, Addr, Decimal, Empty, Env, FullDelegation, OwnedDeps, StakingMsg,
-    SubMsg, Timestamp, Validator,
+    coin, coins, from_binary,
+    testing::{
+        mock_dependencies, mock_env, mock_info, MockApi, MockQuerier, MockStorage,
+        MOCK_CONTRACT_ADDR,
+    },
+    Addr, Decimal, Empty, Env, FullDelegation, OwnedDeps, StakingMsg, SubMsg, Timestamp, Validator,
 };
-
-use mars_delegator::contract::{execute, instantiate, query, sudo};
-use mars_delegator::error::ContractError;
-use mars_delegator::msg::{Config, ExecuteMsg, InstantiateMsg, QueryMsg, SudoMsg};
-use mars_delegator::types::MarsMsg;
+use mars_delegator::{
+    contract::{execute, instantiate, query, sudo},
+    error::ContractError,
+    msg::{Config, ExecuteMsg, InstantiateMsg, QueryMsg, SudoMsg},
+    types::MarsMsg,
+};
 
 pub const BOND_DENOM: &str = "umars";
 

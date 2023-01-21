@@ -1,17 +1,16 @@
-use cosmwasm_std::testing::{
-    mock_dependencies, mock_env, mock_info, MockApi, MockQuerier, MockStorage,
-};
 use cosmwasm_std::{
-    coin, coins, from_binary, Addr, BankMsg, CosmosMsg, Deps, Empty, Env, OwnedDeps, StdError,
-    SubMsg, Timestamp, Uint128,
+    coin, coins, from_binary,
+    testing::{mock_dependencies, mock_env, mock_info, MockApi, MockQuerier, MockStorage},
+    Addr, BankMsg, CosmosMsg, Deps, Empty, Env, OwnedDeps, StdError, SubMsg, Timestamp, Uint128,
 };
-
-use mars_vesting::contract::{execute, instantiate, query};
-use mars_vesting::msg::{
-    ConfigResponse, ExecuteMsg, InstantiateMsg, PositionResponse, QueryMsg, Schedule,
-    VotingPowerResponse,
+use mars_vesting::{
+    contract::{execute, instantiate, query},
+    msg::{
+        ConfigResponse, ExecuteMsg, InstantiateMsg, PositionResponse, QueryMsg, Schedule,
+        VotingPowerResponse,
+    },
+    state::{Position, POSITIONS},
 };
-use mars_vesting::state::{Position, POSITIONS};
 
 fn mock_env_at_timestamp(seconds: u64) -> Env {
     let mut env = mock_env();

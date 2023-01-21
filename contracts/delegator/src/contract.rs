@@ -2,10 +2,13 @@ use cosmwasm_std::{
     entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
 };
 
-use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, SudoMsg};
-use crate::types::MarsMsg;
-use crate::{execute, query};
+use crate::{
+    error::ContractError,
+    execute,
+    msg::{ExecuteMsg, InstantiateMsg, QueryMsg, SudoMsg},
+    query,
+    types::MarsMsg,
+};
 
 pub const CONTRACT_NAME: &str = "crates.io:mars-delegator";
 pub const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");

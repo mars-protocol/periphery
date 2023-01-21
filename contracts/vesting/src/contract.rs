@@ -7,12 +7,14 @@ use cosmwasm_std::{
 use cw2::set_contract_version;
 use cw_storage_plus::Bound;
 
-use crate::helpers::{compute_position_response, compute_withdrawable};
-use crate::msg::{
-    ConfigResponse, ExecuteMsg, InstantiateMsg, PositionResponse, QueryMsg, Schedule,
-    VotingPowerResponse, VEST_DENOM,
+use crate::{
+    helpers::{compute_position_response, compute_withdrawable},
+    msg::{
+        ConfigResponse, ExecuteMsg, InstantiateMsg, PositionResponse, QueryMsg, Schedule,
+        VotingPowerResponse, VEST_DENOM,
+    },
+    state::{Position, OWNER, POSITIONS, UNLOCK_SCHEDULE},
 };
-use crate::state::{Position, OWNER, POSITIONS, UNLOCK_SCHEDULE};
 
 const CONTRACT_NAME: &str = "crates.io:mars-vesting";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
