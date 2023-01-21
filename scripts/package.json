@@ -1,6 +1,7 @@
 {
   "name": "periphery-scripts",
   "version": "1.0.0",
+  "license": "GPL-3.0-or-later",
   "scripts": {
     "compile": "./build_artifacts.sh",
     "generate-types": "yarn rust-schema && tsc --project codegen-tsconfig.json && rm -rf types/generated && node build/codegen && node build/codegen/insertIgnores.js",
