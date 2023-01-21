@@ -1,5 +1,6 @@
 [package]
 name          = "mars-delegator"
+description   = "Smart contract managing community fund delegation to genesis validators on Mars Hub"
 version       = { workspace = true }
 authors       = { workspace = true }
 edition       = { workspace = true }

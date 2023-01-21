@@ -1,5 +1,6 @@
 [package]
 name          = "mars-vesting"
+description   = "Smart contract managing token vesting for Mars protocol contributors"
 version       = { workspace = true }
 authors       = { workspace = true }
 edition       = { workspace = true }
