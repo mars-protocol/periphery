@@ -2,11 +2,7 @@ use cosmwasm_std::{
     coin, Addr, DepsMut, Env, QuerierWrapper, Response, StakingMsg, StdResult, Uint128,
 };
 
-use mars_types::MarsMsg;
-
-use crate::error::ContractError;
-use crate::msg::Config;
-use crate::state::CONFIG;
+use crate::{error::ContractError, msg::Config, state::CONFIG, types::MarsMsg};
 
 pub fn init(deps: DepsMut, cfg: Config) -> Result<Response, ContractError> {
     // We don't implement a validity check of the ending time.

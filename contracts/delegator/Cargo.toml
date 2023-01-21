@@ -1,5 +1,6 @@
 [package]
 name          = "mars-delegator"
+description   = "Smart contract managing community fund delegation to genesis validators on Mars Hub"
 version       = { workspace = true }
 authors       = { workspace = true }
 edition       = { workspace = true }
@@ -18,7 +19,6 @@ cosmwasm-schema = { workspace = true }
 cosmwasm-std    = { workspace = true, features = ["staking"] }
 cw2             = { workspace = true }
 cw-storage-plus = { workspace = true }
-mars-types      = { path = "../../packages/types" }
 thiserror       = { workspace = true }
 
 [dev-dependencies]
