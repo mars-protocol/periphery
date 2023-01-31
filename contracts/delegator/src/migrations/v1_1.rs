@@ -62,3 +62,31 @@ pub fn migrate(deps: DepsMut) -> Result<Response, ContractError> {
         .add_attribute("old_version", version.version)
         .add_attribute("new_version", CONTRACT_VERSION))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use cosmwasm_std::{testing::mock_dependencies, SubMsg};
+    use std::iter::zip;
+
+    #[test]
+    fn proper_migration() {
+        let mut deps = mock_dependencies();
+
+        cw2::set_contract_version(deps.as_mut().storage, CONTRACT_NAME, EXPECTED_VERSION).unwrap();
+
+        let res = migrate(deps.as_mut()).unwrap();
+
+        assert_eq!(res.messages.len(), 15);
+        for ((from, amount), msg) in zip(REDELEGATE_FROM, res.messages) {
+            assert_eq!(
+                msg,
+                SubMsg::new(StakingMsg::Redelegate {
+                    src_validator: from.into(),
+                    dst_validator: REDELEGATE_TO.into(),
+                    amount: coin(amount, BOND_DENOM)
+                })
+            );
+        }
+    }
+}
