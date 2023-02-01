@@ -1,10 +1,10 @@
 use cosmwasm_std::{
-    entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
+    entry_point, to_binary, Binary, Deps, DepsMut, Empty, Env, MessageInfo, Response, StdResult,
 };
 
 use crate::{
     error::ContractError,
-    execute,
+    execute, migrations,
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg, SudoMsg},
     query,
     types::MarsMsg,
@@ -50,4 +50,9 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Config {} => to_binary(&query::query_config(deps)?),
     }
+}
+
+#[entry_point]
+pub fn migrate(deps: DepsMut, _env: Env, _msg: Empty) -> Result<Response, ContractError> {
+    migrations::v1_1::migrate(deps)
 }

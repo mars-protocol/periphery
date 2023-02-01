@@ -8,7 +8,7 @@
 import { UseQueryOptions, useQuery, useMutation, UseMutationOptions } from "@tanstack/react-query";
 import { ExecuteResult } from "@cosmjs/cosmwasm-stargate";
 import { StdFee, Coin } from "@cosmjs/amino";
-import { InstantiateMsg, ExecuteMsg, QueryMsg, Config } from "./MarsDelegator.types";
+import { InstantiateMsg, ExecuteMsg, QueryMsg, MigrateMsg, Config } from "./MarsDelegator.types";
 import { MarsDelegatorQueryClient, MarsDelegatorClient } from "./MarsDelegator.client";
 export const marsDelegatorQueryKeys = {
   contract: ([{

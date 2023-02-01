@@ -17,6 +17,18 @@ pub enum ContractError {
         ending_time: u64,
         current_time: u64,
     },
+
+    #[error("incorrect contract: expecting {expect}, found {found}")]
+    IncorrectContract {
+        expect: String,
+        found: String,
+    },
+
+    #[error("incorrect version: expecting {expect}, found {found}")]
+    IncorrectVersion {
+        expect: String,
+        found: String,
+    },
 }
 
 impl ContractError {
@@ -24,6 +36,20 @@ impl ContractError {
         Self::EndingTimeNotReached {
             ending_time,
             current_time,
+        }
+    }
+
+    pub fn incorrect_contract(expect: impl Into<String>, found: impl Into<String>) -> Self {
+        Self::IncorrectContract {
+            expect: expect.into(),
+            found: found.into(),
+        }
+    }
+
+    pub fn incorrect_version(expect: impl Into<String>, found: impl Into<String>) -> Self {
+        Self::IncorrectVersion {
+            expect: expect.into(),
+            found: found.into(),
         }
     }
 }

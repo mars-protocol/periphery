@@ -19,6 +19,9 @@ export type ExecuteMsg = {
 export type QueryMsg = {
   config: {};
 };
+export interface MigrateMsg {
+  [k: string]: unknown;
+}
 export interface Config {
   bond_denom: string;
   ending_time: number;

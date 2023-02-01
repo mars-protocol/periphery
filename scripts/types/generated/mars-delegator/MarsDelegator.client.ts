@@ -7,7 +7,7 @@
 
 import { CosmWasmClient, SigningCosmWasmClient, ExecuteResult } from "@cosmjs/cosmwasm-stargate";
 import { Coin, StdFee } from "@cosmjs/amino";
-import { InstantiateMsg, ExecuteMsg, QueryMsg, Config } from "./MarsDelegator.types";
+import { InstantiateMsg, ExecuteMsg, QueryMsg, MigrateMsg, Config } from "./MarsDelegator.types";
 export interface MarsDelegatorReadOnlyInterface {
   contractAddress: string;
   config: () => Promise<Config>;

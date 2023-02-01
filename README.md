@@ -18,11 +18,11 @@ Compile the contracts:
 cargo make rust-optimizer
 ```
 
-At tag `v1.0.0`, the following SHA-256 checksums should be produced:
+At tag `v1.1.0`, the following SHA-256 checksums should be produced:
 
 ```plain
-a251d4669097ba31f68d0b832af8bd0568bc7ea6b6bd320eeb2b9b59636fbc6e  mars_delegator.wasm
-3464ed7751342865ffbd7b0750cfac5bffb9fbdaceb3d33f913aa92bd37423d1  mars_vesting.wasm
+524cabbce221579a85653e7a0b0d393843a5781054192e7ead95ca87e8bb2b0f  mars_delegator.wasm
+07eb67c9e9b78c314d36d791e003086e8d6d9e0cd523bae3ef714b67215e0a80  mars_vesting.wasm
 ```
 
 Generate schemas:
