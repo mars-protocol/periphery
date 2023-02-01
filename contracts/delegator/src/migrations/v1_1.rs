@@ -72,6 +72,26 @@ mod tests {
     use super::*;
 
     #[test]
+    fn rejecting_incorrect_contract() {
+        let mut deps = mock_dependencies();
+
+        cw2::set_contract_version(deps.as_mut().storage, "mars-vesting", EXPECTED_VERSION).unwrap();
+
+        let err = migrate(deps.as_mut()).unwrap_err();
+        assert_eq!(err, ContractError::incorrect_contract(CONTRACT_NAME, "mars-vesting"));
+    }
+
+    #[test]
+    fn rejecting_incorrect_version() {
+        let mut deps = mock_dependencies();
+
+        cw2::set_contract_version(deps.as_mut().storage, CONTRACT_NAME, "v1.1.0").unwrap();
+
+        let err = migrate(deps.as_mut()).unwrap_err();
+        assert_eq!(err, ContractError::incorrect_version(EXPECTED_VERSION, "v1.1.0"));
+    }
+
+    #[test]
     fn proper_migration() {
         let mut deps = mock_dependencies();
 
