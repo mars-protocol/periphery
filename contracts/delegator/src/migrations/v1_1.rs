@@ -65,9 +65,11 @@ pub fn migrate(deps: DepsMut) -> Result<Response, ContractError> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use cosmwasm_std::{testing::mock_dependencies, SubMsg};
     use std::iter::zip;
+
+    use cosmwasm_std::{testing::mock_dependencies, SubMsg};
+
+    use super::*;
 
     #[test]
     fn proper_migration() {
