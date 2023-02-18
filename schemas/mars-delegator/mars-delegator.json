@@ -29,20 +29,6 @@
     "title": "ExecuteMsg",
     "oneOf": [
       {
-        "description": "Delegate tokens that the contract holds evenly to the current validator set.",
-        "type": "object",
-        "required": [
-          "bond"
-        ],
-        "properties": {
-          "bond": {
-            "type": "object",
-            "additionalProperties": false
-          }
-        },
-        "additionalProperties": false
-      },
-      {
         "description": "Unbond the delegations.\n\nCan be invoked by anyone after `ending_time` is reached.",
         "type": "object",
         "required": [
