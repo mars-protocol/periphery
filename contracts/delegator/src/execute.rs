@@ -1,6 +1,4 @@
-use cosmwasm_std::{
-    coin, Addr, DepsMut, Env, QuerierWrapper, Response, StakingMsg, StdResult, Uint128,
-};
+use cosmwasm_std::{coin, Addr, DepsMut, Env, QuerierWrapper, Response, StakingMsg, StdResult};
 
 use crate::{error::ContractError, msg::Config, state::CONFIG, types::MarsMsg};
 
@@ -15,13 +13,7 @@ pub fn init(deps: DepsMut, cfg: Config) -> Result<Response, ContractError> {
 pub fn bond(deps: DepsMut, env: Env) -> Result<Response<MarsMsg>, ContractError> {
     let cfg = CONFIG.load(deps.storage)?;
 
-    let amount = deps
-        .querier
-        .query_all_balances(env.contract.address)?
-        .into_iter()
-        .find(|coin| coin.denom == cfg.bond_denom)
-        .map(|coin| coin.amount)
-        .unwrap_or_else(Uint128::zero);
+    let amount = deps.querier.query_balance(env.contract.address, &cfg.bond_denom)?.amount;
 
     if amount.is_zero() {
         return Err(ContractError::NothingToBond);
