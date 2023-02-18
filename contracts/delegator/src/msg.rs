@@ -25,7 +25,7 @@ pub enum SudoMsg {
     ///
     /// This "sudo" message can only be invoked by the gov module, and ignores whether the
     /// `ending_time` has been reached.
-    ForceUnbond {},    
+    ForceUnbond {},
 }
 
 #[cw_serde]
