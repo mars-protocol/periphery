@@ -35,7 +35,7 @@ pub fn bond(deps: DepsMut, env: Env) -> Result<Response<MarsMsg>, ContractError>
         .add_attribute("amount", format!("{amount}{}", cfg.bond_denom)))
 }
 
-pub fn force_unbond(deps: DepsMut, env: Env) -> StdResult<Response<MarsMsg>> {
+pub fn force_unbond(deps: DepsMut, env: Env) -> Result<Response<MarsMsg>, ContractError> {
     let msgs = get_undelegate_msgs(&deps.querier, &env.contract.address)?;
     Ok(Response::new()
         .add_messages(msgs)
