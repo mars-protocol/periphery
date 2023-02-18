@@ -84,7 +84,40 @@
     "description": "An empty struct that serves as a placeholder in different places, such as contracts that don't set a custom message.\n\nIt is designed to be expressable in correct JSON and JSON Schema but contains no meaningful data. Previously we used enums without cases, but those cannot represented as valid JSON Schema (https://github.com/CosmWasm/cosmwasm/issues/451)",
     "type": "object"
   },
-  "sudo": null,
+  "sudo": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "SudoMsg",
+    "oneOf": [
+      {
+        "description": "Delegate tokens that the contract holds evenly to the current validator set.",
+        "type": "object",
+        "required": [
+          "bond"
+        ],
+        "properties": {
+          "bond": {
+            "type": "object",
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "description": "Forcibly unbond the delegations.\n\nThis \"sudo\" message can only be invoked by the gov module, and ignores whether the `ending_time` has been reached.",
+        "type": "object",
+        "required": [
+          "force_unbond"
+        ],
+        "properties": {
+          "force_unbond": {
+            "type": "object",
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    ]
+  },
   "responses": {
     "config": {
       "$schema": "http://json-schema.org/draft-07/schema#",
