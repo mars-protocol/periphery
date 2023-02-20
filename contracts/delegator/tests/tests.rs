@@ -116,6 +116,33 @@ fn instantiating() {
 }
 
 #[test]
+fn bonding() {
+    let mut deps = setup_test();
+
+    // this simulates governance giving the contract 25M MARS from community pool
+    deps.querier.update_balance(MOCK_CONTRACT_ADDR, coins(25_000_000_000_000, BOND_DENOM));
+
+    let res = sudo(deps.as_mut(), mock_env(), SudoMsg::Bond {}).unwrap();
+    assert_eq!(
+        res.messages,
+        vec![
+            SubMsg::new(StakingMsg::Delegate {
+                validator: "larry".into(),
+                amount: coin(8_333_333_333_334, BOND_DENOM),
+            }),
+            SubMsg::new(StakingMsg::Delegate {
+                validator: "jake".into(),
+                amount: coin(8_333_333_333_333, BOND_DENOM),
+            }),
+            SubMsg::new(StakingMsg::Delegate {
+                validator: "pumpkin".into(),
+                amount: coin(8_333_333_333_333, BOND_DENOM),
+            }),
+        ],
+    )
+}
+
+#[test]
 fn forced_unbonding() {
     let mut deps = setup_test();
 
