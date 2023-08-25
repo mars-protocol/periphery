@@ -8,11 +8,20 @@ use mars_vesting::{
     contract::{execute, instantiate, query},
     error::Error,
     msg::{
-        ConfigResponse, ExecuteMsg, InstantiateMsg, PositionResponse, QueryMsg, Schedule,
-        VotingPowerResponse, VEST_DENOM,
+        Config, ExecuteMsg, Position, PositionResponse, QueryMsg, Schedule, VotingPowerResponse,
     },
-    state::{Position, POSITIONS},
+    state::POSITIONS,
 };
+
+pub const MOCK_DENOM: &str = "umars";
+
+fn mock_unlock_schedule() -> Schedule {
+    Schedule {
+        start_time: 1662033600, // 2022-09-01
+        cliff: 0,
+        duration: 63072000, // two years (365 * 24 * 60 * 60 * 2)
+    }
+}
 
 fn mock_env_at_timestamp(seconds: u64) -> Env {
     let mut env = mock_env();
@@ -31,13 +40,10 @@ fn setup_test() -> OwnedDeps<MockStorage, MockApi, MockQuerier, Empty> {
         deps.as_mut(),
         mock_env(),
         mock_info("deployer", &[]),
-        InstantiateMsg {
+        Config {
             owner: "owner".to_string(),
-            unlock_schedule: Schedule {
-                start_time: 1662033600, // 2022-09-01
-                cliff: 0,
-                duration: 63072000, // two years (365 * 24 * 60 * 60 * 2)
-            },
+            denom: MOCK_DENOM.into(),
+            unlock_schedule: mock_unlock_schedule(),
         },
     )
     .unwrap();
@@ -49,30 +55,35 @@ fn setup_test() -> OwnedDeps<MockStorage, MockApi, MockQuerier, Empty> {
 fn proper_instantiation() {
     let deps = setup_test();
 
-    let config: ConfigResponse = query_helper(deps.as_ref(), mock_env(), QueryMsg::Config {});
+    let config: Config<String> = query_helper(deps.as_ref(), mock_env(), QueryMsg::Config {});
     assert_eq!(
         config,
-        ConfigResponse {
+        Config {
             owner: "owner".to_string(),
-            unlock_schedule: Schedule {
-                start_time: 1662033600,
-                cliff: 0,
-                duration: 63072000,
-            },
+            denom: MOCK_DENOM.into(),
+            unlock_schedule: mock_unlock_schedule(),
         },
     );
 }
 
 #[test]
-fn transferring_ownership() {
+fn updating_ownership() {
     let mut deps = setup_test();
+
+    let new_cfg = Config {
+        owner: "new_owner".into(),
+        denom: MOCK_DENOM.into(),
+        unlock_schedule: mock_unlock_schedule(),
+    };
 
     // non-owner cannot transfer ownership
     let err = execute(
         deps.as_mut(),
         mock_env(),
         mock_info("non_owner", &[]),
-        ExecuteMsg::TransferOwnership("new_owner".to_string()),
+        ExecuteMsg::UpdateConfig {
+            new_cfg: new_cfg.clone(),
+        },
     )
     .unwrap_err();
     assert_eq!(err, Error::NotOwner);
@@ -82,12 +93,14 @@ fn transferring_ownership() {
         deps.as_mut(),
         mock_env(),
         mock_info("owner", &[]),
-        ExecuteMsg::TransferOwnership("new_owner".to_string()),
+        ExecuteMsg::UpdateConfig {
+            new_cfg,
+        },
     )
     .unwrap();
     assert_eq!(res.messages.len(), 0);
 
-    let config: ConfigResponse = query_helper(deps.as_ref(), mock_env(), QueryMsg::Config {});
+    let config: Config<String> = query_helper(deps.as_ref(), mock_env(), QueryMsg::Config {});
     assert_eq!(config.owner, "new_owner".to_string());
 }
 
@@ -131,7 +144,7 @@ fn creating_positions() {
         msg.clone(),
     )
     .unwrap_err();
-    assert_eq!(err, PaymentError::MissingDenom(VEST_DENOM.into()).into());
+    assert_eq!(err, PaymentError::MissingDenom(MOCK_DENOM.into()).into());
 
     // properly create a position
     let res = execute(deps.as_mut(), mock_env(), mock_info("owner", &[coin(12345, "umars")]), msg)
