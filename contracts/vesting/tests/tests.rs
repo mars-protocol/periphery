@@ -1,13 +1,15 @@
 use cosmwasm_std::{
     coin, coins, from_binary,
     testing::{mock_dependencies, mock_env, mock_info, MockApi, MockQuerier, MockStorage},
-    Addr, BankMsg, CosmosMsg, Deps, Empty, Env, OwnedDeps, StdError, SubMsg, Timestamp, Uint128,
+    Addr, BankMsg, CosmosMsg, Deps, Empty, Env, OwnedDeps, SubMsg, Timestamp, Uint128,
 };
+use cw_utils::PaymentError;
 use mars_vesting::{
     contract::{execute, instantiate, query},
+    error::Error,
     msg::{
         ConfigResponse, ExecuteMsg, InstantiateMsg, PositionResponse, QueryMsg, Schedule,
-        VotingPowerResponse,
+        VotingPowerResponse, VEST_DENOM,
     },
     state::{Position, POSITIONS},
 };
@@ -73,7 +75,7 @@ fn transferring_ownership() {
         ExecuteMsg::TransferOwnership("new_owner".to_string()),
     )
     .unwrap_err();
-    assert_eq!(err, StdError::generic_err("only owner can transfer ownership"));
+    assert_eq!(err, Error::NotOwner);
 
     // owner can propose a transfer
     let res = execute(
@@ -105,11 +107,11 @@ fn creating_positions() {
     // non-owner cannot create positions
     let err =
         execute(deps.as_mut(), mock_env(), mock_info("non_owner", &[]), msg.clone()).unwrap_err();
-    assert_eq!(err, StdError::generic_err("only owner can create allocations"));
+    assert_eq!(err, Error::NotOwner);
 
     // cannot create a position without sending a coin
     let err = execute(deps.as_mut(), mock_env(), mock_info("owner", &[]), msg.clone()).unwrap_err();
-    assert_eq!(err, StdError::generic_err("wrong number of coins: expecting 1, received 0"));
+    assert_eq!(err, PaymentError::NoFunds {}.into());
 
     // cannot create a position sending more than one coin
     let err = execute(
@@ -119,7 +121,7 @@ fn creating_positions() {
         msg.clone(),
     )
     .unwrap_err();
-    assert_eq!(err, StdError::generic_err("wrong number of coins: expecting 1, received 2"));
+    assert_eq!(err, PaymentError::MultipleDenoms {}.into());
 
     // cannot create a position with the wrong coin
     let err = execute(
@@ -129,13 +131,7 @@ fn creating_positions() {
         msg.clone(),
     )
     .unwrap_err();
-    assert_eq!(err, StdError::generic_err("wrong denom: expecting umars, received uosmo"));
-
-    // cannot create a position with the correct coin but with zero amount
-    let err =
-        execute(deps.as_mut(), mock_env(), mock_info("owner", &[coin(0, "umars")]), msg.clone())
-            .unwrap_err();
-    assert_eq!(err, StdError::generic_err("wrong amount: must be greater than zero"));
+    assert_eq!(err, PaymentError::MissingDenom(VEST_DENOM.into()).into());
 
     // properly create a position
     let res = execute(deps.as_mut(), mock_env(), mock_info("owner", &[coin(12345, "umars")]), msg)
@@ -203,7 +199,7 @@ fn terminating_positions() {
     // non-owner can't terminate allocation
     let err =
         execute(deps.as_mut(), env.clone(), mock_info("non_owner", &[]), msg.clone()).unwrap_err();
-    assert_eq!(err, StdError::generic_err("only owner can terminate allocations"));
+    assert_eq!(err, Error::NotOwner);
 
     // owner properly terminates position
     let res = execute(deps.as_mut(), env, mock_info("owner", &[]), msg).unwrap();
@@ -271,7 +267,7 @@ fn withdrawing() {
         ExecuteMsg::Withdraw {},
     )
     .unwrap_err();
-    assert_eq!(err, StdError::generic_err("withdrawable amount is zero"));
+    assert_eq!(err, Error::ZeroWithdrawable);
 
     // 2022-05-01
     // after the cliff period, but unlock hasn't start yet, withdrawable amount is zero
@@ -282,7 +278,7 @@ fn withdrawing() {
         ExecuteMsg::Withdraw {},
     )
     .unwrap_err();
-    assert_eq!(err, StdError::generic_err("withdrawable amount is zero"));
+    assert_eq!(err, Error::ZeroWithdrawable);
 
     // 2022-10-01
     // vested:       12345 * (1664625600 - 1614600000) / 126144000 = 4895
@@ -316,7 +312,7 @@ fn withdrawing() {
         ExecuteMsg::Withdraw {},
     )
     .unwrap_err();
-    assert_eq!(err, StdError::generic_err("withdrawable amount is zero"));
+    assert_eq!(err, Error::ZeroWithdrawable);
 
     // 2023-10-01
     // vested:       12345 * (1696161600 - 1614600000) / 126144000 = 7981

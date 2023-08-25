@@ -2,12 +2,14 @@
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     coins, to_binary, Addr, BankMsg, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Order,
-    Response, StdError, StdResult, Uint128,
+    Response, Uint128,
 };
 use cw2::set_contract_version;
 use cw_storage_plus::Bound;
+use cw_utils::must_pay;
 
 use crate::{
+    error::{Error, Result},
     helpers::{compute_position_response, compute_withdrawable},
     msg::{
         ConfigResponse, ExecuteMsg, InstantiateMsg, PositionResponse, QueryMsg, Schedule,
@@ -32,7 +34,7 @@ pub fn instantiate(
     _env: Env,
     _info: MessageInfo,
     msg: InstantiateMsg,
-) -> StdResult<Response> {
+) -> Result<Response> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     OWNER.save(deps.storage, &deps.api.addr_validate(&msg.owner)?)?;
@@ -46,7 +48,7 @@ pub fn instantiate(
 //--------------------------------------------------------------------------------------------------
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> StdResult<Response> {
+pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> Result<Response> {
     let api = deps.api;
     match msg {
         ExecuteMsg::CreatePosition {
@@ -68,39 +70,18 @@ pub fn create_position(
     info: MessageInfo,
     user_addr: Addr,
     vest_schedule: Schedule,
-) -> StdResult<Response> {
+) -> Result<Response> {
     // only owner can create allocations
     let owner_addr = OWNER.load(deps.storage)?;
     if info.sender != owner_addr {
-        return Err(StdError::generic_err("only owner can create allocations"));
+        return Err(Error::NotOwner);
     }
 
-    // must send exactly one coin
-    if info.funds.len() != 1 {
-        return Err(StdError::generic_err(format!(
-            "wrong number of coins: expecting 1, received {}",
-            info.funds.len()
-        )));
-    }
-
-    // the coin must be the vesting coin
-    let coin = &info.funds[0];
-    if coin.denom != VEST_DENOM {
-        return Err(StdError::generic_err(format!(
-            "wrong denom: expecting {}, received {}",
-            VEST_DENOM, coin.denom
-        )));
-    }
-
-    // the amount must be greater than zero
-    let total = coin.amount;
-    if total.is_zero() {
-        return Err(StdError::generic_err("wrong amount: must be greater than zero"));
-    }
+    let total = must_pay(&info, VEST_DENOM)?;
 
     POSITIONS.update(deps.storage, &user_addr, |position| {
         if position.is_some() {
-            return Err(StdError::generic_err("user has a vesting position"));
+            return Err(Error::PositionExists);
         }
         Ok(Position {
             total,
@@ -123,13 +104,13 @@ pub fn terminate_position(
     env: Env,
     info: MessageInfo,
     user_addr: Addr,
-) -> StdResult<Response> {
+) -> Result<Response> {
     let current_time = env.block.time.seconds();
 
     // only owner can terminate allocations
     let owner_addr = OWNER.load(deps.storage)?;
     if info.sender != owner_addr {
-        return Err(StdError::generic_err("only owner can terminate allocations"));
+        return Err(Error::NotOwner);
     }
 
     let unlock_schedule = UNLOCK_SCHEDULE.load(deps.storage)?;
@@ -162,7 +143,7 @@ pub fn terminate_position(
         .add_attribute("relaimed", reclaim))
 }
 
-pub fn withdraw(deps: DepsMut, time: u64, user_addr: Addr) -> StdResult<Response> {
+pub fn withdraw(deps: DepsMut, time: u64, user_addr: Addr) -> Result<Response> {
     let unlock_schedule = UNLOCK_SCHEDULE.load(deps.storage)?;
     let mut position = POSITIONS.load(deps.storage, &user_addr)?;
 
@@ -175,7 +156,7 @@ pub fn withdraw(deps: DepsMut, time: u64, user_addr: Addr) -> StdResult<Response
     );
 
     if withdrawable.is_zero() {
-        return Err(StdError::generic_err("withdrawable amount is zero"));
+        return Err(Error::ZeroWithdrawable);
     }
 
     position.withdrawn += withdrawable;
@@ -196,10 +177,10 @@ pub fn transfer_ownership(
     deps: DepsMut,
     sender_addr: Addr,
     new_owner_addr: Addr,
-) -> StdResult<Response> {
+) -> Result<Response> {
     let owner_addr = OWNER.load(deps.storage)?;
     if sender_addr != owner_addr {
-        return Err(StdError::generic_err("only owner can transfer ownership"));
+        return Err(Error::NotOwner);
     }
 
     OWNER.save(deps.storage, &new_owner_addr)?;
@@ -215,7 +196,7 @@ pub fn transfer_ownership(
 //--------------------------------------------------------------------------------------------------
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary> {
     let api = deps.api;
     match msg {
         QueryMsg::Config {} => to_binary(&query_config(deps)?),
@@ -234,20 +215,21 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
             limit,
         } => to_binary(&query_positions(deps, env.block.time.seconds(), start_after, limit)?),
     }
+    .map_err(Into::into)
 }
 
-pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
+pub fn query_config(deps: Deps) -> Result<ConfigResponse> {
     Ok(ConfigResponse {
         owner: OWNER.load(deps.storage)?.into(),
         unlock_schedule: UNLOCK_SCHEDULE.load(deps.storage)?,
     })
 }
 
-pub fn query_voting_power(deps: Deps, user_addr: Addr) -> StdResult<VotingPowerResponse> {
+pub fn query_voting_power(deps: Deps, user_addr: Addr) -> Result<VotingPowerResponse> {
     let voting_power = match POSITIONS.may_load(deps.storage, &user_addr) {
         Ok(Some(position)) => position.total - position.withdrawn,
         Ok(None) => Uint128::zero(),
-        Err(err) => return Err(err),
+        Err(err) => return Err(err.into()),
     };
 
     Ok(VotingPowerResponse {
@@ -256,7 +238,7 @@ pub fn query_voting_power(deps: Deps, user_addr: Addr) -> StdResult<VotingPowerR
     })
 }
 
-pub fn query_position(deps: Deps, time: u64, user_addr: Addr) -> StdResult<PositionResponse> {
+pub fn query_position(deps: Deps, time: u64, user_addr: Addr) -> Result<PositionResponse> {
     let unlock_schedule = UNLOCK_SCHEDULE.load(deps.storage)?;
     let position = POSITIONS.load(deps.storage, &user_addr)?;
 
@@ -267,7 +249,7 @@ pub fn query_voting_powers(
     deps: Deps,
     start_after: Option<String>,
     limit: Option<u32>,
-) -> StdResult<Vec<VotingPowerResponse>> {
+) -> Result<Vec<VotingPowerResponse>> {
     let addr: Addr;
     let start = match &start_after {
         Some(addr_str) => {
@@ -297,7 +279,7 @@ pub fn query_positions(
     time: u64,
     start_after: Option<String>,
     limit: Option<u32>,
-) -> StdResult<Vec<PositionResponse>> {
+) -> Result<Vec<PositionResponse>> {
     let unlock_schedule = UNLOCK_SCHEDULE.load(deps.storage)?;
 
     let addr: Addr;
