@@ -8,7 +8,7 @@ use crate::{
     state::CONFIG,
 };
 
-const FROM_VERSION: &str = "1.2.0";
+const FROM_VERSION: &str = "1.0.0";
 
 pub mod v1_2_0_state {
     use cosmwasm_std::Addr;
