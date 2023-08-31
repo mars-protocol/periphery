@@ -305,7 +305,7 @@ pub fn query_positions(
 //--------------------------------------------------------------------------------------------------
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _: Env, _: MessageInfo, _: Empty) -> Result<Response> {
+pub fn migrate(deps: DepsMut, _: Env, _: Empty) -> Result<Response> {
     use cw_storage_plus::Item;
 
     const LEGACY_OWNER: Item<Addr> = Item::new("owner");
