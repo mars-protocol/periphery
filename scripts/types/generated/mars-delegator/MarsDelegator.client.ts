@@ -7,7 +7,7 @@
 
 import { CosmWasmClient, SigningCosmWasmClient, ExecuteResult } from "@cosmjs/cosmwasm-stargate";
 import { Coin, StdFee } from "@cosmjs/amino";
-import { InstantiateMsg, ExecuteMsg, QueryMsg, MigrateMsg, Config } from "./MarsDelegator.types";
+import { InstantiateMsg, ExecuteMsg, QueryMsg, MigrateMsg, SudoMsg, Config } from "./MarsDelegator.types";
 export interface MarsDelegatorReadOnlyInterface {
   contractAddress: string;
   config: () => Promise<Config>;
@@ -31,7 +31,6 @@ export class MarsDelegatorQueryClient implements MarsDelegatorReadOnlyInterface 
 export interface MarsDelegatorInterface extends MarsDelegatorReadOnlyInterface {
   contractAddress: string;
   sender: string;
-  bond: (fee?: number | StdFee | "auto", memo?: string, funds?: Coin[]) => Promise<ExecuteResult>;
   unbond: (fee?: number | StdFee | "auto", memo?: string, funds?: Coin[]) => Promise<ExecuteResult>;
   refund: (fee?: number | StdFee | "auto", memo?: string, funds?: Coin[]) => Promise<ExecuteResult>;
 }
@@ -45,16 +44,10 @@ export class MarsDelegatorClient extends MarsDelegatorQueryClient implements Mar
     this.client = client;
     this.sender = sender;
     this.contractAddress = contractAddress;
-    this.bond = this.bond.bind(this);
     this.unbond = this.unbond.bind(this);
     this.refund = this.refund.bind(this);
   }
 
-  bond = async (fee: number | StdFee | "auto" = "auto", memo?: string, funds?: Coin[]): Promise<ExecuteResult> => {
-    return await this.client.execute(this.sender, this.contractAddress, {
-      bond: {}
-    }, fee, memo, funds);
-  };
   unbond = async (fee: number | StdFee | "auto" = "auto", memo?: string, funds?: Coin[]): Promise<ExecuteResult> => {
     return await this.client.execute(this.sender, this.contractAddress, {
       unbond: {}

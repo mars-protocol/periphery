@@ -6,6 +6,7 @@
 */
 
 export interface InstantiateMsg {
+  denom: string;
   owner: string;
   unlock_schedule: Schedule;
 }
@@ -15,6 +16,10 @@ export interface Schedule {
   start_time: number;
 }
 export type ExecuteMsg = {
+  update_config: {
+    new_cfg: ConfigForString;
+  };
+} | {
   create_position: {
     user: string;
     vest_schedule: Schedule;
@@ -25,9 +30,12 @@ export type ExecuteMsg = {
   };
 } | {
   withdraw: {};
-} | {
-  transfer_ownership: string;
 };
+export interface ConfigForString {
+  denom: string;
+  owner: string;
+  unlock_schedule: Schedule;
+}
 export type QueryMsg = {
   config: {};
 } | {

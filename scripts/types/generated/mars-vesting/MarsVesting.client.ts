@@ -7,10 +7,10 @@
 
 import { CosmWasmClient, SigningCosmWasmClient, ExecuteResult } from "@cosmjs/cosmwasm-stargate";
 import { Coin, StdFee } from "@cosmjs/amino";
-import { InstantiateMsg, Schedule, ExecuteMsg, QueryMsg, Uint128, PositionResponse, ArrayOfPositionResponse, VotingPowerResponse, ArrayOfVotingPowerResponse } from "./MarsVesting.types";
+import { InstantiateMsg, Schedule, ExecuteMsg, ConfigForString, QueryMsg, Uint128, PositionResponse, ArrayOfPositionResponse, VotingPowerResponse, ArrayOfVotingPowerResponse } from "./MarsVesting.types";
 export interface MarsVestingReadOnlyInterface {
   contractAddress: string;
-  config: () => Promise<InstantiateMsg>;
+  config: () => Promise<ConfigForString>;
   votingPower: ({
     user
   }: {
@@ -50,7 +50,7 @@ export class MarsVestingQueryClient implements MarsVestingReadOnlyInterface {
     this.positions = this.positions.bind(this);
   }
 
-  config = async (): Promise<InstantiateMsg> => {
+  config = async (): Promise<ConfigForString> => {
     return this.client.queryContractSmart(this.contractAddress, {
       config: {}
     });
@@ -109,6 +109,11 @@ export class MarsVestingQueryClient implements MarsVestingReadOnlyInterface {
 export interface MarsVestingInterface extends MarsVestingReadOnlyInterface {
   contractAddress: string;
   sender: string;
+  updateConfig: ({
+    newCfg
+  }: {
+    newCfg: ConfigForString;
+  }, fee?: number | StdFee | "auto", memo?: string, funds?: Coin[]) => Promise<ExecuteResult>;
   createPosition: ({
     user,
     vestSchedule
@@ -122,7 +127,6 @@ export interface MarsVestingInterface extends MarsVestingReadOnlyInterface {
     user: string;
   }, fee?: number | StdFee | "auto", memo?: string, funds?: Coin[]) => Promise<ExecuteResult>;
   withdraw: (fee?: number | StdFee | "auto", memo?: string, funds?: Coin[]) => Promise<ExecuteResult>;
-  transferOwnership: (fee?: number | StdFee | "auto", memo?: string, funds?: Coin[]) => Promise<ExecuteResult>;
 }
 export class MarsVestingClient extends MarsVestingQueryClient implements MarsVestingInterface {
   client: SigningCosmWasmClient;
@@ -134,12 +138,23 @@ export class MarsVestingClient extends MarsVestingQueryClient implements MarsVes
     this.client = client;
     this.sender = sender;
     this.contractAddress = contractAddress;
+    this.updateConfig = this.updateConfig.bind(this);
     this.createPosition = this.createPosition.bind(this);
     this.terminatePosition = this.terminatePosition.bind(this);
     this.withdraw = this.withdraw.bind(this);
-    this.transferOwnership = this.transferOwnership.bind(this);
   }
 
+  updateConfig = async ({
+    newCfg
+  }: {
+    newCfg: ConfigForString;
+  }, fee: number | StdFee | "auto" = "auto", memo?: string, funds?: Coin[]): Promise<ExecuteResult> => {
+    return await this.client.execute(this.sender, this.contractAddress, {
+      update_config: {
+        new_cfg: newCfg
+      }
+    }, fee, memo, funds);
+  };
   createPosition = async ({
     user,
     vestSchedule
@@ -168,11 +183,6 @@ export class MarsVestingClient extends MarsVestingQueryClient implements MarsVes
   withdraw = async (fee: number | StdFee | "auto" = "auto", memo?: string, funds?: Coin[]): Promise<ExecuteResult> => {
     return await this.client.execute(this.sender, this.contractAddress, {
       withdraw: {}
-    }, fee, memo, funds);
-  };
-  transferOwnership = async (fee: number | StdFee | "auto" = "auto", memo?: string, funds?: Coin[]): Promise<ExecuteResult> => {
-    return await this.client.execute(this.sender, this.contractAddress, {
-      transfer_ownership: {}
     }, fee, memo, funds);
   };
 }

@@ -8,7 +8,7 @@
 import { UseQueryOptions, useQuery, useMutation, UseMutationOptions } from "@tanstack/react-query";
 import { ExecuteResult } from "@cosmjs/cosmwasm-stargate";
 import { StdFee, Coin } from "@cosmjs/amino";
-import { InstantiateMsg, ExecuteMsg, QueryMsg, MigrateMsg, Config } from "./MarsDelegator.types";
+import { InstantiateMsg, ExecuteMsg, QueryMsg, MigrateMsg, SudoMsg, Config } from "./MarsDelegator.types";
 import { MarsDelegatorQueryClient, MarsDelegatorClient } from "./MarsDelegator.client";
 export const marsDelegatorQueryKeys = {
   contract: ([{
@@ -72,22 +72,4 @@ export function useMarsDelegatorUnbondMutation(options?: Omit<UseMutationOptions
       funds
     } = {}
   }) => client.unbond(fee, memo, funds), options);
-}
-export interface MarsDelegatorBondMutation {
-  client: MarsDelegatorClient;
-  args?: {
-    fee?: number | StdFee | "auto";
-    memo?: string;
-    funds?: Coin[];
-  };
-}
-export function useMarsDelegatorBondMutation(options?: Omit<UseMutationOptions<ExecuteResult, Error, MarsDelegatorBondMutation>, "mutationFn">) {
-  return useMutation<ExecuteResult, Error, MarsDelegatorBondMutation>(({
-    client,
-    args: {
-      fee,
-      memo,
-      funds
-    } = {}
-  }) => client.bond(fee, memo, funds), options);
 }

@@ -8,7 +8,7 @@
 import { UseQueryOptions, useQuery, useMutation, UseMutationOptions } from "@tanstack/react-query";
 import { ExecuteResult } from "@cosmjs/cosmwasm-stargate";
 import { StdFee, Coin } from "@cosmjs/amino";
-import { InstantiateMsg, Schedule, ExecuteMsg, QueryMsg, Uint128, PositionResponse, ArrayOfPositionResponse, VotingPowerResponse, ArrayOfVotingPowerResponse } from "./MarsVesting.types";
+import { InstantiateMsg, Schedule, ExecuteMsg, ConfigForString, QueryMsg, Uint128, PositionResponse, ArrayOfPositionResponse, VotingPowerResponse, ArrayOfVotingPowerResponse } from "./MarsVesting.types";
 import { MarsVestingQueryClient, MarsVestingClient } from "./MarsVesting.client";
 export const marsVestingQueryKeys = {
   contract: ([{
@@ -112,32 +112,14 @@ export function useMarsVestingVotingPowerQuery<TData = VotingPowerResponse>({
     enabled: !!client && (options?.enabled != undefined ? options.enabled : true)
   });
 }
-export interface MarsVestingConfigQuery<TData> extends MarsVestingReactQuery<InstantiateMsg, TData> {}
-export function useMarsVestingConfigQuery<TData = InstantiateMsg>({
+export interface MarsVestingConfigQuery<TData> extends MarsVestingReactQuery<ConfigForString, TData> {}
+export function useMarsVestingConfigQuery<TData = ConfigForString>({
   client,
   options
 }: MarsVestingConfigQuery<TData>) {
-  return useQuery<InstantiateMsg, Error, TData>(marsVestingQueryKeys.config(client?.contractAddress), () => client ? client.config() : Promise.reject(new Error("Invalid client")), { ...options,
+  return useQuery<ConfigForString, Error, TData>(marsVestingQueryKeys.config(client?.contractAddress), () => client ? client.config() : Promise.reject(new Error("Invalid client")), { ...options,
     enabled: !!client && (options?.enabled != undefined ? options.enabled : true)
   });
-}
-export interface MarsVestingTransferOwnershipMutation {
-  client: MarsVestingClient;
-  args?: {
-    fee?: number | StdFee | "auto";
-    memo?: string;
-    funds?: Coin[];
-  };
-}
-export function useMarsVestingTransferOwnershipMutation(options?: Omit<UseMutationOptions<ExecuteResult, Error, MarsVestingTransferOwnershipMutation>, "mutationFn">) {
-  return useMutation<ExecuteResult, Error, MarsVestingTransferOwnershipMutation>(({
-    client,
-    args: {
-      fee,
-      memo,
-      funds
-    } = {}
-  }) => client.transferOwnership(fee, memo, funds), options);
 }
 export interface MarsVestingWithdrawMutation {
   client: MarsVestingClient;
@@ -201,4 +183,26 @@ export function useMarsVestingCreatePositionMutation(options?: Omit<UseMutationO
       funds
     } = {}
   }) => client.createPosition(msg, fee, memo, funds), options);
+}
+export interface MarsVestingUpdateConfigMutation {
+  client: MarsVestingClient;
+  msg: {
+    newCfg: ConfigForString;
+  };
+  args?: {
+    fee?: number | StdFee | "auto";
+    memo?: string;
+    funds?: Coin[];
+  };
+}
+export function useMarsVestingUpdateConfigMutation(options?: Omit<UseMutationOptions<ExecuteResult, Error, MarsVestingUpdateConfigMutation>, "mutationFn">) {
+  return useMutation<ExecuteResult, Error, MarsVestingUpdateConfigMutation>(({
+    client,
+    msg,
+    args: {
+      fee,
+      memo,
+      funds
+    } = {}
+  }) => client.updateConfig(msg, fee, memo, funds), options);
 }
