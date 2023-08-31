@@ -592,7 +592,7 @@ fn invalid_contract_version() {
 
     let old_contract_version = ContractVersion {
         contract: "crates.io:mars-vesting".to_string(),
-        version: "1.0.0".to_string(),
+        version: "0.9.0".to_string(),
     };
 
     set_contract_version(
@@ -605,8 +605,8 @@ fn invalid_contract_version() {
     let err = migrate(deps.as_mut(), env, Empty {}).unwrap_err();
     assert_eq!(
         Error::Version(VersionError::WrongVersion {
-            expected: "1.2.0".to_string(),
-            found: "1.0.0".to_string()
+            expected: "1.0.0".to_string(),
+            found: "0.9.0".to_string()
         }),
         err
     );
@@ -615,7 +615,7 @@ fn invalid_contract_version() {
 #[test]
 fn proper_migration() {
     let mut deps = mock_dependencies();
-    cw2::set_contract_version(deps.as_mut().storage, "crates.io:mars-vesting", "1.2.0").unwrap();
+    cw2::set_contract_version(deps.as_mut().storage, "crates.io:mars-vesting", "1.0.0").unwrap();
 
     let old_owner = "spiderman_246";
     v1_0_0_state::OWNER.save(deps.as_mut().storage, &Addr::unchecked(old_owner)).unwrap();
@@ -633,7 +633,7 @@ fn proper_migration() {
     assert!(res.data.is_none());
     assert_eq!(
         res.attributes,
-        vec![attr("action", "migrate"), attr("from_version", "1.2.0"), attr("to_version", "1.3.0"),]
+        vec![attr("action", "migrate"), attr("from_version", "1.0.0"), attr("to_version", "1.1.0"),]
     );
 
     let config = CONFIG.load(deps.as_ref().storage).unwrap();
