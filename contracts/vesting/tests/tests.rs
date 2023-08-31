@@ -1,16 +1,29 @@
 use cosmwasm_std::{
-    coin, coins, from_binary,
+    attr, coin, coins, from_binary,
     testing::{mock_dependencies, mock_env, mock_info, MockApi, MockQuerier, MockStorage},
-    Addr, BankMsg, CosmosMsg, Deps, Empty, Env, OwnedDeps, StdError, SubMsg, Timestamp, Uint128,
+    Addr, BankMsg, CosmosMsg, Deps, Empty, Env, OwnedDeps, SubMsg, Timestamp, Uint128,
 };
+use cw2::{set_contract_version, ContractVersion, VersionError};
+use cw_utils::PaymentError;
 use mars_vesting::{
-    contract::{execute, instantiate, query},
+    contract::{execute, instantiate, migrate, query},
+    error::Error,
+    migrations::v1_3_0::v1_2_0_state,
     msg::{
-        ConfigResponse, ExecuteMsg, InstantiateMsg, PositionResponse, QueryMsg, Schedule,
-        VotingPowerResponse,
+        Config, ExecuteMsg, Position, PositionResponse, QueryMsg, Schedule, VotingPowerResponse,
     },
-    state::{Position, POSITIONS},
+    state::{CONFIG, POSITIONS},
 };
+
+pub const MOCK_DENOM: &str = "umars";
+
+fn mock_unlock_schedule() -> Schedule {
+    Schedule {
+        start_time: 1662033600, // 2022-09-01
+        cliff: 0,
+        duration: 63072000, // two years (365 * 24 * 60 * 60 * 2)
+    }
+}
 
 fn mock_env_at_timestamp(seconds: u64) -> Env {
     let mut env = mock_env();
@@ -29,13 +42,10 @@ fn setup_test() -> OwnedDeps<MockStorage, MockApi, MockQuerier, Empty> {
         deps.as_mut(),
         mock_env(),
         mock_info("deployer", &[]),
-        InstantiateMsg {
+        Config {
             owner: "owner".to_string(),
-            unlock_schedule: Schedule {
-                start_time: 1662033600, // 2022-09-01
-                cliff: 0,
-                duration: 63072000, // two years (365 * 24 * 60 * 60 * 2)
-            },
+            denom: MOCK_DENOM.into(),
+            unlock_schedule: mock_unlock_schedule(),
         },
     )
     .unwrap();
@@ -47,45 +57,52 @@ fn setup_test() -> OwnedDeps<MockStorage, MockApi, MockQuerier, Empty> {
 fn proper_instantiation() {
     let deps = setup_test();
 
-    let config: ConfigResponse = query_helper(deps.as_ref(), mock_env(), QueryMsg::Config {});
+    let config: Config<String> = query_helper(deps.as_ref(), mock_env(), QueryMsg::Config {});
     assert_eq!(
         config,
-        ConfigResponse {
+        Config {
             owner: "owner".to_string(),
-            unlock_schedule: Schedule {
-                start_time: 1662033600,
-                cliff: 0,
-                duration: 63072000,
-            },
+            denom: MOCK_DENOM.into(),
+            unlock_schedule: mock_unlock_schedule(),
         },
     );
 }
 
 #[test]
-fn transferring_ownership() {
+fn updating_ownership() {
     let mut deps = setup_test();
+
+    let new_cfg = Config {
+        owner: "new_owner".into(),
+        denom: MOCK_DENOM.into(),
+        unlock_schedule: mock_unlock_schedule(),
+    };
 
     // non-owner cannot transfer ownership
     let err = execute(
         deps.as_mut(),
         mock_env(),
         mock_info("non_owner", &[]),
-        ExecuteMsg::TransferOwnership("new_owner".to_string()),
+        ExecuteMsg::UpdateConfig {
+            new_cfg: new_cfg.clone(),
+        },
     )
     .unwrap_err();
-    assert_eq!(err, StdError::generic_err("only owner can transfer ownership"));
+    assert_eq!(err, Error::NotOwner);
 
     // owner can propose a transfer
     let res = execute(
         deps.as_mut(),
         mock_env(),
         mock_info("owner", &[]),
-        ExecuteMsg::TransferOwnership("new_owner".to_string()),
+        ExecuteMsg::UpdateConfig {
+            new_cfg,
+        },
     )
     .unwrap();
     assert_eq!(res.messages.len(), 0);
 
-    let config: ConfigResponse = query_helper(deps.as_ref(), mock_env(), QueryMsg::Config {});
+    let config: Config<String> = query_helper(deps.as_ref(), mock_env(), QueryMsg::Config {});
     assert_eq!(config.owner, "new_owner".to_string());
 }
 
@@ -105,11 +122,11 @@ fn creating_positions() {
     // non-owner cannot create positions
     let err =
         execute(deps.as_mut(), mock_env(), mock_info("non_owner", &[]), msg.clone()).unwrap_err();
-    assert_eq!(err, StdError::generic_err("only owner can create allocations"));
+    assert_eq!(err, Error::NotOwner);
 
     // cannot create a position without sending a coin
     let err = execute(deps.as_mut(), mock_env(), mock_info("owner", &[]), msg.clone()).unwrap_err();
-    assert_eq!(err, StdError::generic_err("wrong number of coins: expecting 1, received 0"));
+    assert_eq!(err, PaymentError::NoFunds {}.into());
 
     // cannot create a position sending more than one coin
     let err = execute(
@@ -119,7 +136,7 @@ fn creating_positions() {
         msg.clone(),
     )
     .unwrap_err();
-    assert_eq!(err, StdError::generic_err("wrong number of coins: expecting 1, received 2"));
+    assert_eq!(err, PaymentError::MultipleDenoms {}.into());
 
     // cannot create a position with the wrong coin
     let err = execute(
@@ -129,13 +146,7 @@ fn creating_positions() {
         msg.clone(),
     )
     .unwrap_err();
-    assert_eq!(err, StdError::generic_err("wrong denom: expecting umars, received uosmo"));
-
-    // cannot create a position with the correct coin but with zero amount
-    let err =
-        execute(deps.as_mut(), mock_env(), mock_info("owner", &[coin(0, "umars")]), msg.clone())
-            .unwrap_err();
-    assert_eq!(err, StdError::generic_err("wrong amount: must be greater than zero"));
+    assert_eq!(err, PaymentError::MissingDenom(MOCK_DENOM.into()).into());
 
     // properly create a position
     let res = execute(deps.as_mut(), mock_env(), mock_info("owner", &[coin(12345, "umars")]), msg)
@@ -203,7 +214,7 @@ fn terminating_positions() {
     // non-owner can't terminate allocation
     let err =
         execute(deps.as_mut(), env.clone(), mock_info("non_owner", &[]), msg.clone()).unwrap_err();
-    assert_eq!(err, StdError::generic_err("only owner can terminate allocations"));
+    assert_eq!(err, Error::NotOwner);
 
     // owner properly terminates position
     let res = execute(deps.as_mut(), env, mock_info("owner", &[]), msg).unwrap();
@@ -271,7 +282,7 @@ fn withdrawing() {
         ExecuteMsg::Withdraw {},
     )
     .unwrap_err();
-    assert_eq!(err, StdError::generic_err("withdrawable amount is zero"));
+    assert_eq!(err, Error::ZeroWithdrawable);
 
     // 2022-05-01
     // after the cliff period, but unlock hasn't start yet, withdrawable amount is zero
@@ -282,7 +293,7 @@ fn withdrawing() {
         ExecuteMsg::Withdraw {},
     )
     .unwrap_err();
-    assert_eq!(err, StdError::generic_err("withdrawable amount is zero"));
+    assert_eq!(err, Error::ZeroWithdrawable);
 
     // 2022-10-01
     // vested:       12345 * (1664625600 - 1614600000) / 126144000 = 4895
@@ -316,7 +327,7 @@ fn withdrawing() {
         ExecuteMsg::Withdraw {},
     )
     .unwrap_err();
-    assert_eq!(err, StdError::generic_err("withdrawable amount is zero"));
+    assert_eq!(err, Error::ZeroWithdrawable);
 
     // 2023-10-01
     // vested:       12345 * (1696161600 - 1614600000) / 126144000 = 7981
@@ -572,4 +583,61 @@ fn querying_positions() {
             }
         ],
     );
+}
+
+#[test]
+fn invalid_contract_version() {
+    let mut deps = mock_dependencies();
+    let env = mock_env();
+
+    let old_contract_version = ContractVersion {
+        contract: "crates.io:mars-vesting".to_string(),
+        version: "1.0.0".to_string(),
+    };
+
+    set_contract_version(
+        deps.as_mut().storage,
+        old_contract_version.contract.clone(),
+        old_contract_version.version,
+    )
+    .unwrap();
+
+    let err = migrate(deps.as_mut(), env, Empty {}).unwrap_err();
+    assert_eq!(
+        Error::Version(VersionError::WrongVersion {
+            expected: "1.2.0".to_string(),
+            found: "1.0.0".to_string()
+        }),
+        err
+    );
+}
+
+#[test]
+fn proper_migration() {
+    let mut deps = mock_dependencies();
+    cw2::set_contract_version(deps.as_mut().storage, "crates.io:mars-vesting", "1.2.0").unwrap();
+
+    let old_owner = "spiderman_246";
+    v1_2_0_state::OWNER.save(deps.as_mut().storage, &Addr::unchecked(old_owner)).unwrap();
+
+    let old_schedule = Schedule {
+        start_time: 1614600000,
+        cliff: 31536000,
+        duration: 126144000,
+    };
+    v1_2_0_state::UNLOCK_SCHEDULE.save(deps.as_mut().storage, &old_schedule).unwrap();
+
+    let res = migrate(deps.as_mut(), mock_env(), Empty {}).unwrap();
+
+    assert_eq!(res.messages, vec![]);
+    assert!(res.data.is_none());
+    assert_eq!(
+        res.attributes,
+        vec![attr("action", "migrate"), attr("from_version", "1.2.0"), attr("to_version", "1.3.0"),]
+    );
+
+    let config = CONFIG.load(deps.as_ref().storage).unwrap();
+    assert_eq!(config.denom, v1_2_0_state::VEST_DENOM.to_string());
+    assert_eq!(config.owner.to_string(), old_owner.to_string());
+    assert_eq!(config.unlock_schedule, old_schedule);
 }

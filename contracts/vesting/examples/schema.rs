@@ -1,9 +1,9 @@
 use cosmwasm_schema::write_api;
-use mars_vesting::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+use mars_vesting::msg::{Config, ExecuteMsg, QueryMsg};
 
 fn main() {
     write_api! {
-        instantiate: InstantiateMsg,
+        instantiate: Config<String>,
         execute: ExecuteMsg,
         query: QueryMsg,
     }

@@ -2,10 +2,7 @@ use std::cmp::min;
 
 use cosmwasm_std::Uint128;
 
-use crate::{
-    msg::{PositionResponse, Schedule},
-    state::Position,
-};
+use crate::msg::{Position, PositionResponse, Schedule};
 
 /// The return value is a three-tuple consists of: the vested amount, the unlocked amount, and the
 /// withdrawable amount

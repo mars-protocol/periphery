@@ -10,8 +10,6 @@ export interface InstantiateMsg {
   ending_time: number;
 }
 export type ExecuteMsg = {
-  bond: {};
-} | {
   unbond: {};
 } | {
   refund: {};
@@ -22,6 +20,11 @@ export type QueryMsg = {
 export interface MigrateMsg {
   [k: string]: unknown;
 }
+export type SudoMsg = {
+  bond: {};
+} | {
+  force_unbond: {};
+};
 export interface Config {
   bond_denom: string;
   ending_time: number;

@@ -1,23 +1,25 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    coins, to_binary, Addr, BankMsg, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Order,
-    Response, StdError, StdResult, Uint128,
+    coins, to_binary, Addr, BankMsg, Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo,
+    Order, Response, Uint128,
 };
 use cw2::set_contract_version;
 use cw_storage_plus::Bound;
+use cw_utils::must_pay;
 
 use crate::{
+    error::{Error, Result},
     helpers::{compute_position_response, compute_withdrawable},
+    migrations::v1_3_0,
     msg::{
-        ConfigResponse, ExecuteMsg, InstantiateMsg, PositionResponse, QueryMsg, Schedule,
-        VotingPowerResponse, VEST_DENOM,
+        Config, ExecuteMsg, Position, PositionResponse, QueryMsg, Schedule, VotingPowerResponse,
     },
-    state::{Position, OWNER, POSITIONS, UNLOCK_SCHEDULE},
+    state::{CONFIG, POSITIONS},
 };
 
-const CONTRACT_NAME: &str = "crates.io:mars-vesting";
-const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
+pub const CONTRACT_NAME: &str = "crates.io:mars-vesting";
+pub const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 const MAX_LIMIT: u32 = 30;
 const DEFAULT_LIMIT: u32 = 10;
@@ -31,12 +33,12 @@ pub fn instantiate(
     deps: DepsMut,
     _env: Env,
     _info: MessageInfo,
-    msg: InstantiateMsg,
-) -> StdResult<Response> {
+    cfg: Config<String>,
+) -> Result<Response> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    OWNER.save(deps.storage, &deps.api.addr_validate(&msg.owner)?)?;
-    UNLOCK_SCHEDULE.save(deps.storage, &msg.unlock_schedule)?;
+    let cfg = cfg.check(deps.api)?;
+    CONFIG.save(deps.storage, &cfg)?;
 
     Ok(Response::new())
 }
@@ -46,9 +48,12 @@ pub fn instantiate(
 //--------------------------------------------------------------------------------------------------
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> StdResult<Response> {
+pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> Result<Response> {
     let api = deps.api;
     match msg {
+        ExecuteMsg::UpdateConfig {
+            new_cfg,
+        } => update_config(deps, info, new_cfg),
         ExecuteMsg::CreatePosition {
             user,
             vest_schedule,
@@ -57,10 +62,25 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
             user,
         } => terminate_position(deps, env, info, api.addr_validate(&user)?),
         ExecuteMsg::Withdraw {} => withdraw(deps, env.block.time.seconds(), info.sender),
-        ExecuteMsg::TransferOwnership(new_owner) => {
-            transfer_ownership(deps, info.sender, api.addr_validate(&new_owner)?)
-        }
     }
+}
+
+pub fn update_config(
+    deps: DepsMut,
+    info: MessageInfo,
+    new_cfg: Config<String>,
+) -> Result<Response> {
+    let cfg = CONFIG.load(deps.storage)?;
+
+    // only owner can update config
+    if info.sender != cfg.owner {
+        return Err(Error::NotOwner);
+    }
+
+    let new_cfg = new_cfg.check(deps.api)?;
+    CONFIG.save(deps.storage, &new_cfg)?;
+
+    Ok(Response::new().add_attribute("action", "mars/vesting/update_config"))
 }
 
 pub fn create_position(
@@ -68,39 +88,19 @@ pub fn create_position(
     info: MessageInfo,
     user_addr: Addr,
     vest_schedule: Schedule,
-) -> StdResult<Response> {
+) -> Result<Response> {
+    let cfg = CONFIG.load(deps.storage)?;
+
     // only owner can create allocations
-    let owner_addr = OWNER.load(deps.storage)?;
-    if info.sender != owner_addr {
-        return Err(StdError::generic_err("only owner can create allocations"));
+    if info.sender != cfg.owner {
+        return Err(Error::NotOwner);
     }
 
-    // must send exactly one coin
-    if info.funds.len() != 1 {
-        return Err(StdError::generic_err(format!(
-            "wrong number of coins: expecting 1, received {}",
-            info.funds.len()
-        )));
-    }
-
-    // the coin must be the vesting coin
-    let coin = &info.funds[0];
-    if coin.denom != VEST_DENOM {
-        return Err(StdError::generic_err(format!(
-            "wrong denom: expecting {}, received {}",
-            VEST_DENOM, coin.denom
-        )));
-    }
-
-    // the amount must be greater than zero
-    let total = coin.amount;
-    if total.is_zero() {
-        return Err(StdError::generic_err("wrong amount: must be greater than zero"));
-    }
+    let total = must_pay(&info, &cfg.denom)?;
 
     POSITIONS.update(deps.storage, &user_addr, |position| {
         if position.is_some() {
-            return Err(StdError::generic_err("user has a vesting position"));
+            return Err(Error::PositionExists);
         }
         Ok(Position {
             total,
@@ -123,16 +123,15 @@ pub fn terminate_position(
     env: Env,
     info: MessageInfo,
     user_addr: Addr,
-) -> StdResult<Response> {
+) -> Result<Response> {
+    let cfg = CONFIG.load(deps.storage)?;
     let current_time = env.block.time.seconds();
 
     // only owner can terminate allocations
-    let owner_addr = OWNER.load(deps.storage)?;
-    if info.sender != owner_addr {
-        return Err(StdError::generic_err("only owner can terminate allocations"));
+    if info.sender != cfg.owner {
+        return Err(Error::NotOwner);
     }
 
-    let unlock_schedule = UNLOCK_SCHEDULE.load(deps.storage)?;
     let mut position = POSITIONS.load(deps.storage, &user_addr)?;
 
     let (vested, _, _) = compute_withdrawable(
@@ -140,7 +139,7 @@ pub fn terminate_position(
         position.total,
         position.withdrawn,
         &position.vest_schedule,
-        &unlock_schedule,
+        &cfg.unlock_schedule,
     );
 
     // unvested tokens are to be reclaimed by the owner
@@ -153,8 +152,8 @@ pub fn terminate_position(
 
     Ok(Response::new()
         .add_message(CosmosMsg::Bank(BankMsg::Send {
-            to_address: owner_addr.into(),
-            amount: coins(reclaim.u128(), VEST_DENOM),
+            to_address: cfg.owner.into(),
+            amount: coins(reclaim.u128(), cfg.denom),
         }))
         .add_attribute("action", "mars/vesting/terminate_position")
         .add_attribute("user", user_addr)
@@ -162,8 +161,8 @@ pub fn terminate_position(
         .add_attribute("relaimed", reclaim))
 }
 
-pub fn withdraw(deps: DepsMut, time: u64, user_addr: Addr) -> StdResult<Response> {
-    let unlock_schedule = UNLOCK_SCHEDULE.load(deps.storage)?;
+pub fn withdraw(deps: DepsMut, time: u64, user_addr: Addr) -> Result<Response> {
+    let cfg = CONFIG.load(deps.storage)?;
     let mut position = POSITIONS.load(deps.storage, &user_addr)?;
 
     let (_, _, withdrawable) = compute_withdrawable(
@@ -171,11 +170,11 @@ pub fn withdraw(deps: DepsMut, time: u64, user_addr: Addr) -> StdResult<Response
         position.total,
         position.withdrawn,
         &position.vest_schedule,
-        &unlock_schedule,
+        &cfg.unlock_schedule,
     );
 
     if withdrawable.is_zero() {
-        return Err(StdError::generic_err("withdrawable amount is zero"));
+        return Err(Error::ZeroWithdrawable);
     }
 
     position.withdrawn += withdrawable;
@@ -184,7 +183,7 @@ pub fn withdraw(deps: DepsMut, time: u64, user_addr: Addr) -> StdResult<Response
     Ok(Response::new()
         .add_message(CosmosMsg::Bank(BankMsg::Send {
             to_address: user_addr.to_string(),
-            amount: coins(withdrawable.u128(), VEST_DENOM),
+            amount: coins(withdrawable.u128(), cfg.denom),
         }))
         .add_attribute("action", "mars/vesting/withdraw")
         .add_attribute("user", user_addr)
@@ -192,30 +191,12 @@ pub fn withdraw(deps: DepsMut, time: u64, user_addr: Addr) -> StdResult<Response
         .add_attribute("withdrawable", withdrawable))
 }
 
-pub fn transfer_ownership(
-    deps: DepsMut,
-    sender_addr: Addr,
-    new_owner_addr: Addr,
-) -> StdResult<Response> {
-    let owner_addr = OWNER.load(deps.storage)?;
-    if sender_addr != owner_addr {
-        return Err(StdError::generic_err("only owner can transfer ownership"));
-    }
-
-    OWNER.save(deps.storage, &new_owner_addr)?;
-
-    Ok(Response::new()
-        .add_attribute("action", "mars/vesting/transfer_ownership")
-        .add_attribute("previous_owner", owner_addr)
-        .add_attribute("new_owner", new_owner_addr))
-}
-
 //--------------------------------------------------------------------------------------------------
 // Queries
 //--------------------------------------------------------------------------------------------------
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary> {
     let api = deps.api;
     match msg {
         QueryMsg::Config {} => to_binary(&query_config(deps)?),
@@ -234,20 +215,19 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
             limit,
         } => to_binary(&query_positions(deps, env.block.time.seconds(), start_after, limit)?),
     }
+    .map_err(Into::into)
 }
 
-pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
-    Ok(ConfigResponse {
-        owner: OWNER.load(deps.storage)?.into(),
-        unlock_schedule: UNLOCK_SCHEDULE.load(deps.storage)?,
-    })
+pub fn query_config(deps: Deps) -> Result<Config<String>> {
+    let cfg = CONFIG.load(deps.storage)?;
+    Ok(cfg.into())
 }
 
-pub fn query_voting_power(deps: Deps, user_addr: Addr) -> StdResult<VotingPowerResponse> {
+pub fn query_voting_power(deps: Deps, user_addr: Addr) -> Result<VotingPowerResponse> {
     let voting_power = match POSITIONS.may_load(deps.storage, &user_addr) {
         Ok(Some(position)) => position.total - position.withdrawn,
         Ok(None) => Uint128::zero(),
-        Err(err) => return Err(err),
+        Err(err) => return Err(err.into()),
     };
 
     Ok(VotingPowerResponse {
@@ -256,18 +236,18 @@ pub fn query_voting_power(deps: Deps, user_addr: Addr) -> StdResult<VotingPowerR
     })
 }
 
-pub fn query_position(deps: Deps, time: u64, user_addr: Addr) -> StdResult<PositionResponse> {
-    let unlock_schedule = UNLOCK_SCHEDULE.load(deps.storage)?;
+pub fn query_position(deps: Deps, time: u64, user_addr: Addr) -> Result<PositionResponse> {
+    let cfg = CONFIG.load(deps.storage)?;
     let position = POSITIONS.load(deps.storage, &user_addr)?;
 
-    Ok(compute_position_response(time, user_addr, &position, &unlock_schedule))
+    Ok(compute_position_response(time, user_addr, &position, &cfg.unlock_schedule))
 }
 
 pub fn query_voting_powers(
     deps: Deps,
     start_after: Option<String>,
     limit: Option<u32>,
-) -> StdResult<Vec<VotingPowerResponse>> {
+) -> Result<Vec<VotingPowerResponse>> {
     let addr: Addr;
     let start = match &start_after {
         Some(addr_str) => {
@@ -297,8 +277,8 @@ pub fn query_positions(
     time: u64,
     start_after: Option<String>,
     limit: Option<u32>,
-) -> StdResult<Vec<PositionResponse>> {
-    let unlock_schedule = UNLOCK_SCHEDULE.load(deps.storage)?;
+) -> Result<Vec<PositionResponse>> {
+    let cfg = CONFIG.load(deps.storage)?;
 
     let addr: Addr;
     let start = match &start_after {
@@ -316,7 +296,16 @@ pub fn query_positions(
         .take(limit)
         .map(|res| {
             let (user_addr, position) = res?;
-            Ok(compute_position_response(time, user_addr, &position, &unlock_schedule))
+            Ok(compute_position_response(time, user_addr, &position, &cfg.unlock_schedule))
         })
         .collect()
+}
+
+//--------------------------------------------------------------------------------------------------
+// Migration
+//--------------------------------------------------------------------------------------------------
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(deps: DepsMut, _: Env, _: Empty) -> Result<Response> {
+    v1_3_0::migrate(deps)
 }
