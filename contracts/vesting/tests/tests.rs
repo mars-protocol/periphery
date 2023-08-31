@@ -8,7 +8,7 @@ use cw_utils::PaymentError;
 use mars_vesting::{
     contract::{execute, instantiate, migrate, query},
     error::Error,
-    migrations::v1_3_0::v1_2_0_state,
+    migrations::v1_1_0::v1_0_0_state,
     msg::{
         Config, ExecuteMsg, Position, PositionResponse, QueryMsg, Schedule, VotingPowerResponse,
     },
@@ -618,14 +618,14 @@ fn proper_migration() {
     cw2::set_contract_version(deps.as_mut().storage, "crates.io:mars-vesting", "1.2.0").unwrap();
 
     let old_owner = "spiderman_246";
-    v1_2_0_state::OWNER.save(deps.as_mut().storage, &Addr::unchecked(old_owner)).unwrap();
+    v1_0_0_state::OWNER.save(deps.as_mut().storage, &Addr::unchecked(old_owner)).unwrap();
 
     let old_schedule = Schedule {
         start_time: 1614600000,
         cliff: 31536000,
         duration: 126144000,
     };
-    v1_2_0_state::UNLOCK_SCHEDULE.save(deps.as_mut().storage, &old_schedule).unwrap();
+    v1_0_0_state::UNLOCK_SCHEDULE.save(deps.as_mut().storage, &old_schedule).unwrap();
 
     let res = migrate(deps.as_mut(), mock_env(), Empty {}).unwrap();
 
@@ -637,7 +637,7 @@ fn proper_migration() {
     );
 
     let config = CONFIG.load(deps.as_ref().storage).unwrap();
-    assert_eq!(config.denom, v1_2_0_state::VEST_DENOM.to_string());
+    assert_eq!(config.denom, v1_0_0_state::VEST_DENOM.to_string());
     assert_eq!(config.owner.to_string(), old_owner.to_string());
     assert_eq!(config.unlock_schedule, old_schedule);
 }

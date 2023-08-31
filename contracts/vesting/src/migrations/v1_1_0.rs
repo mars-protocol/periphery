@@ -10,7 +10,7 @@ use crate::{
 
 const FROM_VERSION: &str = "1.0.0";
 
-pub mod v1_2_0_state {
+pub mod v1_0_0_state {
     use cosmwasm_std::Addr;
     use cw_storage_plus::Item;
 
@@ -27,9 +27,9 @@ pub fn migrate(deps: DepsMut) -> Result<Response> {
 
     // CONFIG updated, re-initializing
     let cfg = Config {
-        owner: v1_2_0_state::OWNER.load(deps.storage)?,
-        denom: v1_2_0_state::VEST_DENOM.into(),
-        unlock_schedule: v1_2_0_state::UNLOCK_SCHEDULE.load(deps.storage)?,
+        owner: v1_0_0_state::OWNER.load(deps.storage)?,
+        denom: v1_0_0_state::VEST_DENOM.into(),
+        unlock_schedule: v1_0_0_state::UNLOCK_SCHEDULE.load(deps.storage)?,
     };
 
     CONFIG.save(deps.storage, &cfg)?;

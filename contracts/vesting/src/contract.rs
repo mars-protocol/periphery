@@ -11,7 +11,7 @@ use cw_utils::must_pay;
 use crate::{
     error::{Error, Result},
     helpers::{compute_position_response, compute_withdrawable},
-    migrations::v1_3_0,
+    migrations::v1_1_0,
     msg::{
         Config, ExecuteMsg, Position, PositionResponse, QueryMsg, Schedule, VotingPowerResponse,
     },
@@ -307,5 +307,5 @@ pub fn query_positions(
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _: Env, _: Empty) -> Result<Response> {
-    v1_3_0::migrate(deps)
+    v1_1_0::migrate(deps)
 }
