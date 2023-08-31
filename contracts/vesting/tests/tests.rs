@@ -1,16 +1,18 @@
 use cosmwasm_std::{
-    coin, coins, from_binary,
+    attr, coin, coins, from_binary,
     testing::{mock_dependencies, mock_env, mock_info, MockApi, MockQuerier, MockStorage},
     Addr, BankMsg, CosmosMsg, Deps, Empty, Env, OwnedDeps, SubMsg, Timestamp, Uint128,
 };
+use cw2::{set_contract_version, ContractVersion, VersionError};
 use cw_utils::PaymentError;
 use mars_vesting::{
-    contract::{execute, instantiate, query},
+    contract::{execute, instantiate, migrate, query},
     error::Error,
+    migrations::v1_3_0::v1_2_0_state,
     msg::{
         Config, ExecuteMsg, Position, PositionResponse, QueryMsg, Schedule, VotingPowerResponse,
     },
-    state::POSITIONS,
+    state::{CONFIG, POSITIONS},
 };
 
 pub const MOCK_DENOM: &str = "umars";
@@ -581,4 +583,61 @@ fn querying_positions() {
             }
         ],
     );
+}
+
+#[test]
+fn invalid_contract_version() {
+    let mut deps = mock_dependencies();
+    let env = mock_env();
+
+    let old_contract_version = ContractVersion {
+        contract: "crates.io:mars-vesting".to_string(),
+        version: "1.0.0".to_string(),
+    };
+
+    set_contract_version(
+        deps.as_mut().storage,
+        old_contract_version.contract.clone(),
+        old_contract_version.version,
+    )
+    .unwrap();
+
+    let err = migrate(deps.as_mut(), env, Empty {}).unwrap_err();
+    assert_eq!(
+        Error::Version(VersionError::WrongVersion {
+            expected: "1.2.0".to_string(),
+            found: "1.0.0".to_string()
+        }),
+        err
+    );
+}
+
+#[test]
+fn proper_migration() {
+    let mut deps = mock_dependencies();
+    cw2::set_contract_version(deps.as_mut().storage, "crates.io:mars-vesting", "1.2.0").unwrap();
+
+    let old_owner = "spiderman_246";
+    v1_2_0_state::OWNER.save(deps.as_mut().storage, &Addr::unchecked(old_owner)).unwrap();
+
+    let old_schedule = Schedule {
+        start_time: 1614600000,
+        cliff: 31536000,
+        duration: 126144000,
+    };
+    v1_2_0_state::UNLOCK_SCHEDULE.save(deps.as_mut().storage, &old_schedule).unwrap();
+
+    let res = migrate(deps.as_mut(), mock_env(), Empty {}).unwrap();
+
+    assert_eq!(res.messages, vec![]);
+    assert!(res.data.is_none());
+    assert_eq!(
+        res.attributes,
+        vec![attr("action", "migrate"), attr("from_version", "1.2.0"), attr("to_version", "1.3.0"),]
+    );
+
+    let config = CONFIG.load(deps.as_ref().storage).unwrap();
+    assert_eq!(config.denom, v1_2_0_state::VEST_DENOM.to_string());
+    assert_eq!(config.owner.to_string(), old_owner.to_string());
+    assert_eq!(config.unlock_schedule, old_schedule);
 }

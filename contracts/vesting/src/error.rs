@@ -14,6 +14,9 @@ pub enum Error {
 
     #[error("withdrawable amount is zero")]
     ZeroWithdrawable,
+
+    #[error("{0}")]
+    Version(#[from] cw2::VersionError),
 }
 
 pub(crate) type Result<T> = core::result::Result<T, Error>;

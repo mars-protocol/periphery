@@ -11,14 +11,15 @@ use cw_utils::must_pay;
 use crate::{
     error::{Error, Result},
     helpers::{compute_position_response, compute_withdrawable},
+    migrations::v1_3_0,
     msg::{
         Config, ExecuteMsg, Position, PositionResponse, QueryMsg, Schedule, VotingPowerResponse,
     },
     state::{CONFIG, POSITIONS},
 };
 
-const CONTRACT_NAME: &str = "crates.io:mars-vesting";
-const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
+pub const CONTRACT_NAME: &str = "crates.io:mars-vesting";
+pub const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 const MAX_LIMIT: u32 = 30;
 const DEFAULT_LIMIT: u32 = 10;
@@ -306,19 +307,5 @@ pub fn query_positions(
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _: Env, _: Empty) -> Result<Response> {
-    use cw_storage_plus::Item;
-
-    const LEGACY_OWNER: Item<Addr> = Item::new("owner");
-    const LEGACY_VEST_DENOM: &str = "umars";
-    const LEGACY_UNLOCK_SCHEDULE: Item<Schedule> = Item::new("unlock_schedule");
-
-    let cfg = Config {
-        owner: LEGACY_OWNER.load(deps.storage)?,
-        denom: LEGACY_VEST_DENOM.into(),
-        unlock_schedule: LEGACY_UNLOCK_SCHEDULE.load(deps.storage)?,
-    };
-
-    CONFIG.save(deps.storage, &cfg)?;
-
-    Ok(Response::new())
+    v1_3_0::migrate(deps)
 }
