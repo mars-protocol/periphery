@@ -1,7 +1,7 @@
 [package]
 name          = "mars-delegator"
 description   = "Smart contract managing community fund delegation to genesis validators on Mars Hub"
-version       = { workspace = true }
+version       = "1.2.0"
 authors       = { workspace = true }
 edition       = { workspace = true }
 rust-version  = { workspace = true }

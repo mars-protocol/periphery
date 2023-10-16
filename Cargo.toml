@@ -2,7 +2,6 @@
 members = ["contracts/*"]
 
 [workspace.package]
-version       = "1.3.0"
 authors       = ["Larry Engineer <larry@delphidigital.io>"]
 edition       = "2021"
 rust-version  = "1.69"
