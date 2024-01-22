@@ -17,6 +17,9 @@ pub enum Error {
 
     #[error("{0}")]
     Version(#[from] cw2::VersionError),
+
+    #[error("{0}")]
+    Overflow(#[from] cosmwasm_std::OverflowError),
 }
 
 pub(crate) type Result<T> = core::result::Result<T, Error>;

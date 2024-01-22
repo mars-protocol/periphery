@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    coins, to_binary, Addr, BankMsg, Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo,
-    Order, Response, Uint128,
+    coins, to_binary, Addr, BankMsg, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Order,
+    Response, Uint128,
 };
 use cw2::set_contract_version;
 use cw_storage_plus::Bound;
@@ -11,9 +11,10 @@ use cw_utils::must_pay;
 use crate::{
     error::{Error, Result},
     helpers::{compute_position_response, compute_withdrawable},
-    migrations::v1_1_0,
+    migrations::{v1_1_0, v1_1_1},
     msg::{
-        Config, ExecuteMsg, Position, PositionResponse, QueryMsg, Schedule, VotingPowerResponse,
+        Config, ExecuteMsg, MigrateMsg, Position, PositionResponse, QueryMsg, Schedule,
+        VotingPowerResponse,
     },
     state::{CONFIG, POSITIONS},
 };
@@ -306,6 +307,9 @@ pub fn query_positions(
 //--------------------------------------------------------------------------------------------------
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _: Env, _: Empty) -> Result<Response> {
-    v1_1_0::migrate(deps)
+pub fn migrate(deps: DepsMut, _: Env, msg: MigrateMsg) -> Result<Response> {
+    match msg {
+        MigrateMsg::V1_0_0ToV1_1_0 {} => v1_1_0::migrate(deps),
+        MigrateMsg::V1_1_0ToV1_1_1(updates) => v1_1_1::migrate(deps, updates),
+    }
 }
