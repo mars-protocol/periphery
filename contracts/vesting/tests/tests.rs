@@ -637,14 +637,37 @@ fn proper_migration() {
     )
     .unwrap();
 
+    execute(
+        deps.as_mut(),
+        mock_env(),
+        mock_info("owner", &[coin(789, "umars")]),
+        ExecuteMsg::CreatePosition {
+            user: "piotr".to_string(),
+            vest_schedule: Schedule {
+                start_time: 1614600000, // 2021-03-01
+                cliff: 31536000,        // 1 year
+                duration: 126144000,    // 4 years
+            },
+        },
+    )
+    .unwrap();
+
     let update_msg = V1_1_1Updates {
-        position_alterations: vec![PositionAlteration {
-            addr: Addr::unchecked("larry"),
-            total_old: Uint128::new(456),
-            total_new: Uint128::new(333),
-            reclaim: Uint128::new(123),
-        }],
-        total_reclaim: Uint128::new(123),
+        position_alterations: vec![
+            PositionAlteration {
+                addr: Addr::unchecked("larry"),
+                total_old: Uint128::new(456),
+                total_new: Uint128::new(333),
+                reclaim: Uint128::new(123),
+            },
+            PositionAlteration {
+                addr: Addr::unchecked("piotr"),
+                total_old: Uint128::new(789),
+                total_new: Uint128::new(666),
+                reclaim: Uint128::new(123),
+            },
+        ],
+        total_reclaim: Uint128::new(246),
     };
 
     let res = migrate(deps.as_mut(), mock_env(), MigrateMsg::V1_1_0ToV1_1_1(update_msg)).unwrap();
@@ -653,7 +676,7 @@ fn proper_migration() {
         res.messages,
         vec![SubMsg::new(CosmosMsg::Bank(BankMsg::Send {
             to_address: "owner".to_string(),
-            amount: coins(123, "umars")
+            amount: coins(246, "umars")
         }))]
     );
     assert!(res.data.is_none());
