@@ -133,3 +133,29 @@ pub struct PositionResponse {
     /// This vesting position's vesting schedule
     pub vest_schedule: Schedule,
 }
+
+#[cw_serde]
+pub enum MigrateMsg {
+    V1_0_0ToV1_1_0 {},
+    V1_1_0ToV1_1_1(V1_1_1Updates),
+}
+
+#[cw_serde]
+pub struct V1_1_1Updates {
+    /// Array of positions for alteration
+    pub position_alterations: Vec<PositionAlteration>,
+    /// Total amount of MARS to be reclaimed
+    pub total_reclaim: Uint128,
+}
+
+#[cw_serde]
+pub struct PositionAlteration {
+    /// Address of user to alter
+    pub addr: Addr,
+    /// Total amount of MARS allocated previously
+    pub total_old: Uint128,
+    /// Total amount of MARS allocated now
+    pub total_new: Uint128,
+    /// Total amount of MARS to be reclaimed
+    pub reclaim: Uint128,
+}
