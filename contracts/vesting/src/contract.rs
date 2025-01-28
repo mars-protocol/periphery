@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    coins, to_binary, Addr, BankMsg, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Order,
-    Response, Uint128,
+    coins, to_json_binary, Addr, BankMsg, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
+    Order, Response, Uint128,
 };
 use cw2::set_contract_version;
 use cw_storage_plus::Bound;
@@ -200,21 +200,25 @@ pub fn withdraw(deps: DepsMut, time: u64, user_addr: Addr) -> Result<Response> {
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary> {
     let api = deps.api;
     match msg {
-        QueryMsg::Config {} => to_binary(&query_config(deps)?),
+        QueryMsg::Config {} => to_json_binary(&query_config(deps)?),
         QueryMsg::VotingPower {
             user,
-        } => to_binary(&query_voting_power(deps, api.addr_validate(&user)?)?),
+        } => to_json_binary(&query_voting_power(deps, api.addr_validate(&user)?)?),
         QueryMsg::VotingPowers {
             start_after,
             limit,
-        } => to_binary(&query_voting_powers(deps, start_after, limit)?),
+        } => to_json_binary(&query_voting_powers(deps, start_after, limit)?),
         QueryMsg::Position {
             user,
-        } => to_binary(&query_position(deps, env.block.time.seconds(), api.addr_validate(&user)?)?),
+        } => to_json_binary(&query_position(
+            deps,
+            env.block.time.seconds(),
+            api.addr_validate(&user)?,
+        )?),
         QueryMsg::Positions {
             start_after,
             limit,
-        } => to_binary(&query_positions(deps, env.block.time.seconds(), start_after, limit)?),
+        } => to_json_binary(&query_positions(deps, env.block.time.seconds(), start_after, limit)?),
     }
     .map_err(Into::into)
 }

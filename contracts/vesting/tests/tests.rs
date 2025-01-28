@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    attr, coin, coins, from_binary,
+    attr, coin, coins, from_json,
     testing::{mock_dependencies, mock_env, mock_info, MockApi, MockQuerier, MockStorage},
     Addr, BankMsg, CosmosMsg, Deps, Empty, Env, OwnedDeps, SubMsg, Timestamp, Uint128,
 };
@@ -32,7 +32,7 @@ fn mock_env_at_timestamp(seconds: u64) -> Env {
 }
 
 fn query_helper<T: serde::de::DeserializeOwned>(deps: Deps, env: Env, msg: QueryMsg) -> T {
-    from_binary(&query(deps, env, msg).unwrap()).unwrap()
+    from_json(&query(deps, env, msg).unwrap()).unwrap()
 }
 
 fn setup_test() -> OwnedDeps<MockStorage, MockApi, MockQuerier, Empty> {
