@@ -11,12 +11,12 @@ use cw_utils::must_pay;
 use crate::{
     error::{Error, Result},
     helpers::{compute_position_response, compute_withdrawable},
-    migrations::{v1_1_0, v1_1_1},
+    migrations::{v1_1_0, v1_1_1, v1_1_2},
     msg::{
         Config, ExecuteMsg, MigrateMsg, Position, PositionResponse, QueryMsg, Schedule,
         VotingPowerResponse,
     },
-    state::{CONFIG, POSITIONS},
+    state::{CONFIG, POSITIONS, WITHDRAW_ENABLED},
 };
 
 pub const CONTRACT_NAME: &str = "crates.io:mars-vesting";
@@ -163,6 +163,11 @@ pub fn terminate_position(
 }
 
 pub fn withdraw(deps: DepsMut, time: u64, user_addr: Addr) -> Result<Response> {
+    let withdraw_enabled = WITHDRAW_ENABLED.may_load(deps.storage)?.unwrap_or(true);
+    if !withdraw_enabled {
+        return Err(Error::WithdrawDisabled);
+    }
+
     let cfg = CONFIG.load(deps.storage)?;
     let mut position = POSITIONS.load(deps.storage, &user_addr)?;
 
@@ -311,9 +316,10 @@ pub fn query_positions(
 //--------------------------------------------------------------------------------------------------
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _: Env, msg: MigrateMsg) -> Result<Response> {
+pub fn migrate(deps: DepsMut, env: Env, msg: MigrateMsg) -> Result<Response> {
     match msg {
         MigrateMsg::V1_0_0ToV1_1_0 {} => v1_1_0::migrate(deps),
         MigrateMsg::V1_1_0ToV1_1_1(updates) => v1_1_1::migrate(deps, updates),
+        MigrateMsg::V1_1_1ToV1_1_2(updates) => v1_1_2::migrate(deps, env, updates),
     }
 }

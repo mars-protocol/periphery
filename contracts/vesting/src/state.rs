@@ -6,3 +6,5 @@ use crate::msg::{Config, Position};
 pub const CONFIG: Item<Config<Addr>> = Item::new("config");
 
 pub const POSITIONS: Map<&Addr, Position> = Map::new("positions");
+
+pub const WITHDRAW_ENABLED: Item<bool> = Item::new("withdraw_enabled");

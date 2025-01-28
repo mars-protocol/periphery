@@ -138,6 +138,7 @@ pub struct PositionResponse {
 pub enum MigrateMsg {
     V1_0_0ToV1_1_0 {},
     V1_1_0ToV1_1_1(V1_1_1Updates),
+    V1_1_1ToV1_1_2(V1_1_2Updates),
 }
 
 #[cw_serde]
@@ -158,4 +159,10 @@ pub struct PositionAlteration {
     pub total_new: Uint128,
     /// Total amount of MARS to be reclaimed
     pub reclaim: Uint128,
+}
+
+#[cw_serde]
+pub struct V1_1_2Updates {
+    // Send all MARS to designated multisig
+    pub mars_receiver_addr: String,
 }
