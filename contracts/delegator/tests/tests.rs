@@ -105,7 +105,7 @@ fn instantiating() {
     assert!(res.messages.is_empty());
 
     let cfg_bytes = query(deps.as_ref(), mock_env(), QueryMsg::Config {}).unwrap();
-    let cfg: Config = from_json(&cfg_bytes).unwrap();
+    let cfg: Config = from_json(cfg_bytes).unwrap();
     assert_eq!(
         cfg,
         Config {

@@ -35,7 +35,7 @@ fn mock_env_at_timestamp(seconds: u64) -> Env {
 }
 
 fn query_helper<T: serde::de::DeserializeOwned>(deps: Deps, env: Env, msg: QueryMsg) -> T {
-    from_json(&query(deps, env, msg).unwrap()).unwrap()
+    from_json(query(deps, env, msg).unwrap()).unwrap()
 }
 
 fn setup_test(contract_balance: &[Coin]) -> OwnedDeps<MockStorage, MockApi, MockQuerier, Empty> {

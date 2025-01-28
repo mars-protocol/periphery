@@ -10,10 +10,10 @@ default_to_workspace = false
 # Directory with wasm files used by integration tests (another directory can be used instead, for example 'artifacts' from rust-optimizer)
 ARTIFACTS_DIR_PATH = "target/wasm32-unknown-unknown/release"
 # If you bump this version, verify RUST_VERSION correctness
-RUST_OPTIMIZER_VERSION = "0.13.0"
+RUST_OPTIMIZER_VERSION = "0.16.0"
 # Use rust version from rust-optimizer Dockerfile (see https://github.com/CosmWasm/rust-optimizer/blob/main/Dockerfile#L1)
 # to be sure that we compile / test against the same version
-RUST_VERSION = "1.69.0"
+RUST_VERSION = "1.78.0"
 
 [tasks.all-actions]
 dependencies = [
@@ -58,7 +58,6 @@ command = "cargo"
 args = ["fmt", "--all", "--check"]
 
 [tasks.clippy]
-toolchain = "nightly"
 command = "cargo"
 args = ["clippy", "--tests", "--", "-D", "warnings"]
 
@@ -75,9 +74,9 @@ alias = "coverage-grcov-lcov"
 [tasks.rust-optimizer]
 script = """
 if [[ $(arch) == "arm64" ]]; then
-  image="cosmwasm/workspace-optimizer-arm64:0.14.0"
+  image="cosmwasm/workspace-optimizer-arm64:${RUST_OPTIMIZER_VERSION}"
 else
-  image="cosmwasm/workspace-optimizer:0.14.0"
+  image="cosmwasm/workspace-optimizer:${RUST_OPTIMIZER_VERSION}"
 fi
 docker run --rm -v "$(pwd)":/code \
   --mount type=volume,source="$(basename "$(pwd)")_cache",target=/target \
