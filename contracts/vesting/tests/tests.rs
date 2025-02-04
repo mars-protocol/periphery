@@ -1,7 +1,10 @@
 use cosmwasm_std::{
-    attr, coin, coins, from_binary,
-    testing::{mock_dependencies, mock_env, mock_info, MockApi, MockQuerier, MockStorage},
-    Addr, BankMsg, CosmosMsg, Deps, Empty, Env, OwnedDeps, SubMsg, Timestamp, Uint128,
+    attr, coin, coins, from_json,
+    testing::{
+        mock_dependencies, mock_dependencies_with_balance, mock_env, mock_info, MockApi,
+        MockQuerier, MockStorage,
+    },
+    Addr, BankMsg, Coin, CosmosMsg, Deps, Empty, Env, OwnedDeps, SubMsg, Timestamp, Uint128,
 };
 use cw2::{set_contract_version, ContractVersion, VersionError};
 use cw_utils::PaymentError;
@@ -10,7 +13,7 @@ use mars_vesting::{
     error::Error,
     msg::{
         Config, ExecuteMsg, MigrateMsg, Position, PositionAlteration, PositionResponse, QueryMsg,
-        Schedule, V1_1_1Updates, VotingPowerResponse,
+        Schedule, V1_1_1Updates, V1_1_2Updates, VotingPowerResponse,
     },
     state::POSITIONS,
 };
@@ -32,11 +35,11 @@ fn mock_env_at_timestamp(seconds: u64) -> Env {
 }
 
 fn query_helper<T: serde::de::DeserializeOwned>(deps: Deps, env: Env, msg: QueryMsg) -> T {
-    from_binary(&query(deps, env, msg).unwrap()).unwrap()
+    from_json(query(deps, env, msg).unwrap()).unwrap()
 }
 
-fn setup_test() -> OwnedDeps<MockStorage, MockApi, MockQuerier, Empty> {
-    let mut deps = mock_dependencies();
+fn setup_test(contract_balance: &[Coin]) -> OwnedDeps<MockStorage, MockApi, MockQuerier, Empty> {
+    let mut deps = mock_dependencies_with_balance(contract_balance);
 
     instantiate(
         deps.as_mut(),
@@ -55,7 +58,7 @@ fn setup_test() -> OwnedDeps<MockStorage, MockApi, MockQuerier, Empty> {
 
 #[test]
 fn proper_instantiation() {
-    let deps = setup_test();
+    let deps = setup_test(&[]);
 
     let config: Config<String> = query_helper(deps.as_ref(), mock_env(), QueryMsg::Config {});
     assert_eq!(
@@ -70,7 +73,7 @@ fn proper_instantiation() {
 
 #[test]
 fn updating_ownership() {
-    let mut deps = setup_test();
+    let mut deps = setup_test(&[]);
 
     let new_cfg = Config {
         owner: "new_owner".into(),
@@ -108,7 +111,7 @@ fn updating_ownership() {
 
 #[test]
 fn creating_positions() {
-    let mut deps = setup_test();
+    let mut deps = setup_test(&[]);
 
     let msg = ExecuteMsg::CreatePosition {
         user: "larry".to_string(),
@@ -170,7 +173,7 @@ fn creating_positions() {
 
 #[test]
 fn terminating_positions() {
-    let mut deps = setup_test();
+    let mut deps = setup_test(&[]);
 
     execute(
         deps.as_mut(),
@@ -256,7 +259,7 @@ fn terminating_positions() {
 
 #[test]
 fn withdrawing() {
-    let mut deps = setup_test();
+    let mut deps = setup_test(&[]);
 
     execute(
         deps.as_mut(),
@@ -399,7 +402,7 @@ fn withdrawing() {
 
 #[test]
 fn querying_positions() {
-    let mut deps = setup_test();
+    let mut deps = setup_test(&[]);
 
     execute(
         deps.as_mut(),
@@ -618,8 +621,8 @@ fn invalid_contract_version() {
 }
 
 #[test]
-fn proper_migration() {
-    let mut deps = setup_test();
+fn proper_migration_for_v1_1_1() {
+    let mut deps = setup_test(&[]);
     cw2::set_contract_version(deps.as_mut().storage, "crates.io:mars-vesting", "1.1.0").unwrap();
 
     execute(
@@ -682,6 +685,58 @@ fn proper_migration() {
     assert!(res.data.is_none());
     assert_eq!(
         res.attributes,
-        vec![attr("action", "migrate"), attr("from_version", "1.1.0"), attr("to_version", "1.1.1"),]
+        vec![attr("action", "migrate"), attr("from_version", "1.1.0"), attr("to_version", "1.1.2"),] // We can't test the actual version here, as it's set in the migration, should be 1.1.1
+    );
+}
+
+#[test]
+fn proper_migration_for_v1_1_2() {
+    let mars_balance = coin(45235, MOCK_DENOM);
+    let mut deps = setup_test(&[mars_balance.clone()]);
+    cw2::set_contract_version(deps.as_mut().storage, "crates.io:mars-vesting", "1.1.1").unwrap();
+
+    execute(
+        deps.as_mut(),
+        mock_env(),
+        mock_info("owner", &[coin(456, "umars")]),
+        ExecuteMsg::CreatePosition {
+            user: "larry".to_string(),
+            vest_schedule: Schedule {
+                start_time: 1614600000, // 2021-03-01
+                cliff: 31536000,        // 1 year
+                duration: 126144000,    // 4 years
+            },
+        },
+    )
+    .unwrap();
+
+    let update_msg = V1_1_2Updates {
+        mars_receiver_addr: "some_multisig_addr".to_string(),
+    };
+
+    let res =
+        migrate(deps.as_mut(), mock_env(), MigrateMsg::V1_1_1ToV1_1_2(update_msg.clone())).unwrap();
+
+    // Try to withdraw from the contract
+    let err = execute(
+        deps.as_mut(),
+        mock_env_at_timestamp(1630497600),
+        mock_info("larry", &[]),
+        ExecuteMsg::Withdraw {},
+    )
+    .unwrap_err();
+    assert_eq!(err, Error::WithdrawDisabled);
+
+    assert_eq!(
+        res.messages,
+        vec![SubMsg::new(CosmosMsg::Bank(BankMsg::Send {
+            to_address: update_msg.mars_receiver_addr,
+            amount: vec![mars_balance],
+        }))]
+    );
+    assert!(res.data.is_none());
+    assert_eq!(
+        res.attributes,
+        vec![attr("action", "migrate"), attr("from_version", "1.1.1"), attr("to_version", "1.1.2"),]
     );
 }

@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    coins, to_binary, Addr, BankMsg, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Order,
-    Response, Uint128,
+    coins, to_json_binary, Addr, BankMsg, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
+    Order, Response, Uint128,
 };
 use cw2::set_contract_version;
 use cw_storage_plus::Bound;
@@ -11,12 +11,12 @@ use cw_utils::must_pay;
 use crate::{
     error::{Error, Result},
     helpers::{compute_position_response, compute_withdrawable},
-    migrations::{v1_1_0, v1_1_1},
+    migrations::{v1_1_0, v1_1_1, v1_1_2},
     msg::{
         Config, ExecuteMsg, MigrateMsg, Position, PositionResponse, QueryMsg, Schedule,
         VotingPowerResponse,
     },
-    state::{CONFIG, POSITIONS},
+    state::{CONFIG, POSITIONS, WITHDRAW_ENABLED},
 };
 
 pub const CONTRACT_NAME: &str = "crates.io:mars-vesting";
@@ -163,6 +163,11 @@ pub fn terminate_position(
 }
 
 pub fn withdraw(deps: DepsMut, time: u64, user_addr: Addr) -> Result<Response> {
+    let withdraw_enabled = WITHDRAW_ENABLED.may_load(deps.storage)?.unwrap_or(true);
+    if !withdraw_enabled {
+        return Err(Error::WithdrawDisabled);
+    }
+
     let cfg = CONFIG.load(deps.storage)?;
     let mut position = POSITIONS.load(deps.storage, &user_addr)?;
 
@@ -200,21 +205,25 @@ pub fn withdraw(deps: DepsMut, time: u64, user_addr: Addr) -> Result<Response> {
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary> {
     let api = deps.api;
     match msg {
-        QueryMsg::Config {} => to_binary(&query_config(deps)?),
+        QueryMsg::Config {} => to_json_binary(&query_config(deps)?),
         QueryMsg::VotingPower {
             user,
-        } => to_binary(&query_voting_power(deps, api.addr_validate(&user)?)?),
+        } => to_json_binary(&query_voting_power(deps, api.addr_validate(&user)?)?),
         QueryMsg::VotingPowers {
             start_after,
             limit,
-        } => to_binary(&query_voting_powers(deps, start_after, limit)?),
+        } => to_json_binary(&query_voting_powers(deps, start_after, limit)?),
         QueryMsg::Position {
             user,
-        } => to_binary(&query_position(deps, env.block.time.seconds(), api.addr_validate(&user)?)?),
+        } => to_json_binary(&query_position(
+            deps,
+            env.block.time.seconds(),
+            api.addr_validate(&user)?,
+        )?),
         QueryMsg::Positions {
             start_after,
             limit,
-        } => to_binary(&query_positions(deps, env.block.time.seconds(), start_after, limit)?),
+        } => to_json_binary(&query_positions(deps, env.block.time.seconds(), start_after, limit)?),
     }
     .map_err(Into::into)
 }
@@ -307,9 +316,10 @@ pub fn query_positions(
 //--------------------------------------------------------------------------------------------------
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _: Env, msg: MigrateMsg) -> Result<Response> {
+pub fn migrate(deps: DepsMut, env: Env, msg: MigrateMsg) -> Result<Response> {
     match msg {
         MigrateMsg::V1_0_0ToV1_1_0 {} => v1_1_0::migrate(deps),
         MigrateMsg::V1_1_0ToV1_1_1(updates) => v1_1_1::migrate(deps, updates),
+        MigrateMsg::V1_1_1ToV1_1_2(updates) => v1_1_2::migrate(deps, env, updates),
     }
 }

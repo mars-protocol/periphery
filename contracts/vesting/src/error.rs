@@ -15,6 +15,9 @@ pub enum Error {
     #[error("withdrawable amount is zero")]
     ZeroWithdrawable,
 
+    #[error("withdraw is disabled")]
+    WithdrawDisabled,
+
     #[error("{0}")]
     Version(#[from] cw2::VersionError),
 
